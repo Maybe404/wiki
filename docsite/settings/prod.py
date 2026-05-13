@@ -4,7 +4,7 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = False
 SECRET_KEY = os.environ["SECRET_KEY"]
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
 
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000
