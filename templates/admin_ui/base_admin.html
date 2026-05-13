@@ -85,7 +85,7 @@
     <span style="margin-left:10px;font-size:var(--text-aux);color:var(--color-text-sub);">Docsite 管理</span>
   </header>
 
-  <div class="admin-layout" style="height: calc(100vh - 0px);">
+  <div class="admin-layout">
 
     <!-- Sidebar backdrop (mobile) -->
     <div class="sidebar-backdrop" x-show="!sidebarCollapsed" @click="sidebarCollapsed=true"
@@ -194,7 +194,7 @@
   <!-- ===== Context menu ===== -->
   <div class="ctx-menu"
        x-show="ctxMenu.open"
-       :style="`top:${ctxMenu.y}px; left:${ctxMenu.x}px`"
+       :style="ctxMenuStyle()"
        @click.outside="ctxMenu.open = false"
        style="display:none;">
     <button class="ctx-menu-item" @click="ctxMenuAction('rename')">
@@ -277,12 +277,33 @@
             if (li) li.classList.toggle('tree-node--collapsed');
           });
 
+          // 选中节点 — 设置 is-active
+          document.addEventListener('click', (e) => {
+            const row = e.target.closest('.tree-node-row');
+            if (!row || e.target.closest('.tree-toggle') || e.target.closest('.node-action')) {
+              return;
+            }
+            document.querySelectorAll('.tree-node-row.is-active').forEach((r) => {
+              r.classList.remove('is-active');
+            });
+            row.classList.add('is-active');
+          });
+
           // 屏幕宽度变化时自动处理侧边栏
           const mq = window.matchMedia('(max-width: 1023px)');
           this.sidebarCollapsed = mq.matches;
           mq.addEventListener('change', (e) => {
             this.sidebarCollapsed = e.matches;
           });
+        },
+
+        ctxMenuStyle() {
+          // Clamp context menu position to stay on screen
+          const menuW = 172;
+          const menuH = 130;
+          const x = Math.min(this.ctxMenu.x, window.innerWidth - menuW - 8);
+          const y = Math.min(this.ctxMenu.y, window.innerHeight - menuH - 8);
+          return `top:${y}px; left:${x}px`;
         },
 
         ctxMenuAction(action) {
@@ -311,9 +332,10 @@
     function initSortable() {
       const lists = document.querySelectorAll('.sortable-list');
       lists.forEach((list) => {
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         Sortable.create(list, {
           group: 'docsite-tree',
-          animation: 150,
+          animation: reducedMotion ? 0 : 150,
           ghostClass: 'tree-ghost',
           dragClass: 'sortable-drag',
           fallbackOnBody: true,

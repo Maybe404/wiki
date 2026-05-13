@@ -1,7 +1,15 @@
+/* Admin-specific tokens (supplement base design system) */
+:root {
+  --color-on-dark:  oklch(97% 0.008 152); /* near-white tinted green, for text on dark surfaces */
+  --topbar-h:       0px;                  /* overridden on mobile */
+  --shadow-card:    0 8px 32px oklch(10% 0.01 60 / 0.18);
+  --shadow-menu:    0 4px 16px oklch(10% 0.01 60 / 0.14);
+}
+
 /* ===== Admin Layout ===== */
 .admin-layout {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - var(--topbar-h));
   overflow: hidden;
   background: var(--color-bg);
 }
@@ -46,7 +54,7 @@
   height: 26px;
   border-radius: 50%;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-on-dark);
   font-size: 11px;
   font-weight: 400;
   display: flex;
@@ -141,7 +149,22 @@
   background: var(--color-bg);
 }
 
-.tree-node-row:hover .node-actions {
+.tree-node-row:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.tree-node-row.is-active {
+  background: var(--color-link-hover-bg);
+}
+
+.tree-node-row.is-active .node-title {
+  color: var(--color-accent);
+  font-weight: 400;
+}
+
+.tree-node-row:hover .node-actions,
+.tree-node-row.is-active .node-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -385,7 +408,7 @@
   border-radius: 10px;
   border: 1px solid var(--color-border);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(26, 24, 20, 0.18);
+  box-shadow: var(--shadow-card);
 }
 
 .search-input-wrap {
@@ -440,7 +463,7 @@
   border-radius: 10px;
   border: 1px solid var(--color-border);
   padding: 28px;
-  box-shadow: 0 8px 32px rgba(26, 24, 20, 0.18);
+  box-shadow: var(--shadow-card);
 }
 
 .modal-title {
@@ -471,7 +494,9 @@
   border-radius: 8px;
   padding: 4px;
   min-width: 160px;
-  box-shadow: 0 4px 16px rgba(26, 24, 20, 0.14);
+  box-shadow: var(--shadow-menu);
+  /* prevent overflow off screen edges */
+  max-width: calc(100vw - 24px);
 }
 
 .ctx-menu-item {
@@ -508,7 +533,7 @@
   align-items: center;
   gap: 6px;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-on-dark);
   border: none;
   border-radius: 6px;
   padding: 8px 16px;
@@ -541,8 +566,13 @@
 
 /* ===== Mobile ===== */
 @media (max-width: 1023px) {
+  :root {
+    --topbar-h: 48px;
+  }
+
   .admin-topbar {
     display: flex;
+    height: var(--topbar-h);
   }
 
   .sidebar {
@@ -575,4 +605,25 @@
 
 @media (min-width: 1024px) {
   .sidebar-backdrop { display: none !important; }
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .toggle-chevron,
+  .node-actions,
+  .search-overlay,
+  .search-modal,
+  .modal-overlay,
+  .ctx-menu,
+  .tree-toggle,
+  .btn-new-doc,
+  .btn-primary,
+  .btn-secondary,
+  .node-action,
+  .search-trigger,
+  .ctx-menu-item {
+    transition: none !important;
+    animation: none !important;
+  }
 }
