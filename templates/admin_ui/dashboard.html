@@ -1,63 +1,18 @@
-{% extends "base.html" %}
+{% extends "admin_ui/base_admin.html" %}
+{% load doc_tree %}
 
-{% block title %}管理后台{% endblock %}
+{% block title %}文档管理{% endblock %}
 
-{% block extra_head %}
-<style>
-  .admin-wrap {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .admin-placeholder {
-    text-align: center;
-    padding: 48px;
-  }
-
-  .admin-placeholder h1 {
-    font-family: var(--font-serif);
-    font-size: var(--text-h2);
-    color: var(--color-text);
-    margin-bottom: 12px;
-  }
-
-  .admin-placeholder p {
-    font-size: var(--text-aux);
-    color: var(--color-text-sub);
-    margin-bottom: 32px;
-  }
-
-  .meta {
-    font-size: var(--text-aux);
-    color: var(--color-text-aux);
-    margin-bottom: 32px;
-  }
-
-  .logout-link {
-    display: inline-block;
-    font-size: var(--text-aux);
-    color: var(--color-gold);
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: border-color 150ms, color 150ms;
-  }
-
-  .logout-link:hover {
-    color: #7A612E;
-    border-bottom-color: #7A612E;
-  }
-</style>
+{% block sidebar_tree %}
+{% csrf_token %}
+{% render_admin_tree tree_data %}
 {% endblock %}
 
-{% block body %}
-<div class="admin-wrap">
-  <div class="admin-placeholder">
-    <h1>管理后台</h1>
-    <p>阶段 2 占位页 · 后续阶段将实现完整管理界面</p>
-    <p class="meta">当前用户：{{ request.user.username }}</p>
-    <a href="{% url 'logout' %}" class="logout-link">退出登录</a>
+{% block main_content %}
+<div class="admin-content">
+  <div class="admin-content-placeholder">
+    <h2>选择左侧文档</h2>
+    <p>点击目录树中的文档即可查看内容。<br>编辑功能将在阶段 5 实现。</p>
   </div>
 </div>
 {% endblock %}

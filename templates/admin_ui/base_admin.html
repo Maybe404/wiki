@@ -1,0 +1,385 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}管理后台{% endblock %} · Docsite</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+
+  <!-- Design tokens (same as base.html) -->
+  <style>
+    :root {
+      --color-bg:           #F5F3EE;
+      --color-surface:      #FFFFFF;
+      --color-text:         #1A1814;
+      --color-text-sub:     #6D6A64;
+      --color-text-aux:     #A09C95;
+      --color-accent:       #2C4A3A;
+      --color-gold:         #967B3E;
+      --color-border:       #E2DED6;
+      --color-border-light: #EDEAE4;
+      --color-error-bg:     #FBF3F3;
+      --color-error-text:   #7A2E2E;
+      --color-success-text: #3F5F3A;
+      --color-warning-text: #8A6A2E;
+      --color-link-hover-bg: rgba(44, 74, 58, 0.08);
+      --color-focus-ring:   rgba(150, 123, 62, 0.35);
+
+      --font-serif:   'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', system-ui, sans-serif;
+
+      --text-h1:   2.5rem;
+      --text-h2:   1.875rem;
+      --text-h3:   1.375rem;
+      --text-body: 1rem;
+      --text-aux:  0.875rem;
+      --text-label: 0.6875rem;
+
+      --content-max-width: 840px;
+      --content-padding-x: 48px;
+      --section-padding-y: 56px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-weight: 300;
+      line-height: 1.6;
+      font-size: var(--text-body);
+      overflow: hidden;
+    }
+
+    h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; }
+
+    button { font-family: inherit; }
+
+    *:focus-visible {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+    }
+  </style>
+
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body x-data="adminApp()" x-init="init()">
+
+  <!-- Mobile topbar -->
+  <header class="admin-topbar">
+    <button class="btn-sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed" aria-label="切换侧边栏">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <line x1="2" y1="4.5" x2="16" y2="4.5"/>
+        <line x1="2" y1="9" x2="16" y2="9"/>
+        <line x1="2" y1="13.5" x2="16" y2="13.5"/>
+      </svg>
+    </button>
+    <span style="margin-left:10px;font-size:var(--text-aux);color:var(--color-text-sub);">Docsite 管理</span>
+  </header>
+
+  <div class="admin-layout" style="height: calc(100vh - 0px);">
+
+    <!-- Sidebar backdrop (mobile) -->
+    <div class="sidebar-backdrop" x-show="!sidebarCollapsed" @click="sidebarCollapsed=true"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         style="display:none;"></div>
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar" :class="{'sidebar--collapsed': sidebarCollapsed}">
+
+      <!-- Header: user + search -->
+      <div class="sidebar-header">
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar">
+            {{ request.user.username|slice:":2"|upper }}
+          </div>
+          <span class="sidebar-user-name">{{ request.user.username }}</span>
+        </div>
+        <button class="search-trigger" @click="searchOpen = true" aria-label="搜索文档（⌘K）">
+          <span>搜索文档…</span>
+          <kbd>⌘K</kbd>
+        </button>
+      </div>
+
+      <!-- Tree -->
+      <div class="sidebar-tree-wrap">
+        {% block sidebar_tree %}{% endblock %}
+      </div>
+
+      <!-- Footer -->
+      <div class="sidebar-footer">
+        <button class="btn-new-doc" @click="newDocOpen = true" aria-label="新建文档">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+               stroke-width="1.5" stroke-linecap="round">
+            <line x1="7" y1="2" x2="7" y2="12"/>
+            <line x1="2" y1="7" x2="12" y2="7"/>
+          </svg>
+          新文档
+        </button>
+        <a href="{% url 'logout' %}" class="btn-settings" title="退出登录" aria-label="退出登录">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
+            <polyline points="11 11 14 8 11 5"/>
+            <line x1="14" y1="8" x2="6" y2="8"/>
+          </svg>
+        </a>
+      </div>
+
+    </aside>
+
+    <!-- ===== Main content ===== -->
+    <main class="admin-main">
+      {% block main_content %}{% endblock %}
+    </main>
+
+  </div><!-- /.admin-layout -->
+
+  <!-- ===== ⌘K Search modal ===== -->
+  <div class="search-overlay"
+       x-show="searchOpen"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       @click.self="searchOpen = false"
+       style="display:none;">
+    <div class="search-modal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0">
+      <div class="search-input-wrap">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round">
+          <circle cx="6.5" cy="6.5" r="4.5"/>
+          <line x1="10" y1="10" x2="14" y2="14"/>
+        </svg>
+        <input class="search-input" type="text" placeholder="搜索文档标题或内容…"
+               x-ref="searchInput" aria-label="搜索">
+      </div>
+      <div class="search-hint">搜索功能将在阶段 9 实现 · 按 Esc 关闭</div>
+    </div>
+  </div>
+
+  <!-- ===== New doc modal ===== -->
+  <div class="modal-overlay"
+       x-show="newDocOpen"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       @click.self="newDocOpen = false"
+       style="display:none;">
+    <div class="modal">
+      <h2 class="modal-title">新建文档</h2>
+      <p class="modal-hint">编辑功能将在阶段 5 实现。</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" @click="newDocOpen = false">取消</button>
+        <button class="btn-primary" disabled>创建（即将开放）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Context menu ===== -->
+  <div class="ctx-menu"
+       x-show="ctxMenu.open"
+       :style="`top:${ctxMenu.y}px; left:${ctxMenu.x}px`"
+       @click.outside="ctxMenu.open = false"
+       style="display:none;">
+    <button class="ctx-menu-item" @click="ctxMenuAction('rename')">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 2l3 3-6 6H2V8l6-6z"/>
+      </svg>
+      重命名
+    </button>
+    <button class="ctx-menu-item" @click="ctxMenuAction('add-child')">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round">
+        <line x1="6.5" y1="2" x2="6.5" y2="11"/>
+        <line x1="2" y1="6.5" x2="11" y2="6.5"/>
+      </svg>
+      新增子节点
+    </button>
+    <div class="ctx-menu-sep"></div>
+    <button class="ctx-menu-item ctx-menu-item--danger" @click="ctxMenuAction('delete')">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="2 4 3 4 11 4"/>
+        <path d="M4.5 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1"/>
+        <path d="M3 4l.7 7a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L11 4"/>
+      </svg>
+      删除
+    </button>
+  </div>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- SortableJS -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+
+  <script>
+    function adminApp() {
+      return {
+        searchOpen: false,
+        newDocOpen: false,
+        sidebarCollapsed: false,
+        ctxMenu: { open: false, x: 0, y: 0, nodeId: null },
+
+        init() {
+          // ⌘K / Ctrl+K
+          document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+              e.preventDefault();
+              this.searchOpen = true;
+              this.$nextTick(() => this.$refs.searchInput?.focus());
+            }
+            if (e.key === 'Escape') {
+              this.searchOpen = false;
+              this.newDocOpen = false;
+              this.ctxMenu.open = false;
+            }
+          });
+
+          // 初始化 SortableJS
+          this.$nextTick(() => initSortable());
+
+          // 复制链接按钮
+          document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.node-action--copy');
+            if (!btn) return;
+            const slug = btn.dataset.slug;
+            if (!slug) return;
+            const url = `${location.origin}/d/${slug}/`;
+            navigator.clipboard.writeText(url).then(() => {
+              showToast('链接已复制');
+            });
+          });
+
+          // 树节点展开/收起
+          document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tree-toggle');
+            if (!btn) return;
+            const li = btn.closest('.tree-node');
+            if (li) li.classList.toggle('tree-node--collapsed');
+          });
+
+          // 屏幕宽度变化时自动处理侧边栏
+          const mq = window.matchMedia('(max-width: 1023px)');
+          this.sidebarCollapsed = mq.matches;
+          mq.addEventListener('change', (e) => {
+            this.sidebarCollapsed = e.matches;
+          });
+        },
+
+        ctxMenuAction(action) {
+          const nodeId = this.ctxMenu.nodeId;
+          this.ctxMenu.open = false;
+          if (action === 'rename') {
+            alert('重命名功能将在后续阶段实现（nodeId: ' + nodeId + ')');
+          } else if (action === 'add-child') {
+            alert('新增子节点功能将在后续阶段实现（parentId: ' + nodeId + ')');
+          } else if (action === 'delete') {
+            if (confirm('确认删除此文档？（当前仅为占位确认）')) {
+              alert('删除功能将在后续阶段实现');
+            }
+          }
+        },
+      };
+    }
+
+    function getCsrfToken() {
+      const el = document.querySelector('[name=csrfmiddlewaretoken]');
+      if (el) return el.value;
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      return match ? match[1] : '';
+    }
+
+    function initSortable() {
+      const lists = document.querySelectorAll('.sortable-list');
+      lists.forEach((list) => {
+        Sortable.create(list, {
+          group: 'docsite-tree',
+          animation: 150,
+          ghostClass: 'tree-ghost',
+          dragClass: 'sortable-drag',
+          fallbackOnBody: true,
+          swapThreshold: 0.65,
+          onEnd(evt) {
+            const nodeId = evt.item.dataset.id;
+            if (!nodeId) return;
+
+            const destList = evt.to;
+            const newParentId = destList.dataset.parentId || '';
+
+            const siblings = [...destList.children].filter(
+              (el) => el.classList.contains('tree-node')
+            );
+            const nodeIdx = siblings.indexOf(evt.item);
+            const prevSibling = nodeIdx > 0 ? siblings[nodeIdx - 1] : null;
+            const prevSiblingId = prevSibling ? (prevSibling.dataset.id || '') : '';
+
+            fetch('/admin/tree/reorder', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+              },
+              body: JSON.stringify({
+                node_id: nodeId,
+                new_parent_id: newParentId,
+                prev_sibling_id: prevSiblingId,
+              }),
+            }).then((r) => {
+              if (!r.ok) {
+                console.error('reorder failed', r.status);
+              }
+            });
+          },
+        });
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.textContent = msg;
+      Object.assign(t.style, {
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        background: '#F5F3EE',
+        color: '#3F5F3A',
+        border: '1px solid #E2DED6',
+        borderRadius: '6px',
+        padding: '10px 16px',
+        fontSize: '0.875rem',
+        fontFamily: "'Noto Sans SC', sans-serif",
+        fontWeight: '300',
+        zIndex: '9999',
+        boxShadow: '0 2px 8px rgba(26,24,20,0.1)',
+        transition: 'opacity 400ms',
+      });
+      document.body.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        setTimeout(() => t.remove(), 400);
+      }, 2100);
+    }
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
