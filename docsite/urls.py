@@ -3,10 +3,11 @@ from django.urls import include, path
 
 from apps.core import views
 
+handler404 = "apps.core.views.custom_404"
+
 urlpatterns = [
     path("", views.home, name="home"),
-    # Django 内置 admin 挪到非冲突路径
     path("django-admin/", admin.site.urls),
-    # 鉴权：/login、/logout、/admin/
     path("", include("apps.accounts.urls")),
+    path("", include("apps.documents.urls")),
 ]

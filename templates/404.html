@@ -1,0 +1,21 @@
+{% load static %}<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>页面不存在 — Docsite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/public.css' %}">
+</head>
+<body>
+  <div class="not-found" role="main">
+    <div class="not-found__num" aria-hidden="true">404</div>
+    <h1 class="not-found__title">页面不存在</h1>
+    <p class="not-found__body">
+      这篇文档可能尚未发布，或链接已失效。
+    </p>
+  </div>
+</body>
+</html>

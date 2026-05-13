@@ -1,0 +1,341 @@
+/* ============================================================
+   Design tokens
+   ============================================================ */
+:root {
+  --color-bg:           #F5F3EE;
+  --color-surface:      #FFFFFF;
+  --color-text:         #1A1814;
+  --color-text-sub:     #6D6A64;
+  --color-text-aux:     #A09C95;
+  --color-accent:       #2C4A3A;
+  --color-gold:         #967B3E;
+  --color-border:       #E2DED6;
+  --color-border-light: #EDEAE4;
+  --color-error-bg:     #FBF3F3;
+  --color-error-text:   #7A2E2E;
+  --color-success-text: #3F5F3A;
+  --color-link-hover-bg: rgba(44, 74, 58, 0.08);
+  --color-focus-ring:   rgba(150, 123, 62, 0.35);
+
+  --font-serif: 'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+  --font-sans:  'Noto Sans SC', system-ui, sans-serif;
+
+  --text-h1:    2.5rem;
+  --text-h2:    1.875rem;
+  --text-h3:    1.375rem;
+  --text-body:  1rem;
+  --text-aux:   0.875rem;
+  --text-label: 0.6875rem;
+
+  --content-max-width: 840px;
+  --content-padding-x: 48px;
+  --section-padding-y: 56px;
+}
+
+/* ============================================================
+   Reset
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ============================================================
+   Base
+   ============================================================ */
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: var(--text-body);
+  line-height: 1.8;
+}
+
+/* ============================================================
+   Progress bar
+   ============================================================ */
+#progress-bar-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  z-index: 100;
+  background: transparent;
+}
+
+#progress-bar {
+  height: 2px;
+  background: var(--color-gold);
+  transition: width 60ms linear;
+  width: 0%;
+}
+
+/* ============================================================
+   Doc layout
+   ============================================================ */
+.doc-wrap {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding-left: var(--content-padding-x);
+  padding-right: var(--content-padding-x);
+}
+
+/* ============================================================
+   Doc sections
+   ============================================================ */
+.doc-section {
+  padding-top: var(--section-padding-y);
+  padding-bottom: var(--section-padding-y);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-section:last-child {
+  border-bottom: none;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+h1 { font-size: var(--text-h1); line-height: 1.2; }
+h2 { font-size: var(--text-h2); line-height: 1.3; }
+h3 { font-size: var(--text-h3); line-height: 1.4; }
+
+p { margin-top: 1em; }
+p:first-child { margin-top: 0; }
+
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 3px;
+  transition: background 180ms;
+}
+a:hover { background: var(--color-link-hover-bg); }
+a:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+strong { font-weight: 600; }
+em     { font-style: italic; }
+
+/* ============================================================
+   Doc components
+   ============================================================ */
+
+/* 引用块 */
+.doc-quote {
+  border-left: 3px solid var(--color-gold);
+  background: var(--color-surface);
+  padding: 20px 24px;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  margin-top: 1.5em;
+}
+
+/* 卡片 */
+.doc-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 22px;
+  margin-top: 1.5em;
+}
+
+/* 对比双列 */
+.doc-compare-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 1.5em;
+}
+
+.doc-compare-pair__col {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.doc-compare-pair__col--bad { background: var(--color-error-bg); }
+.doc-compare-pair__col--good { background: var(--color-surface); }
+
+.doc-compare-pair__label {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-aux);
+  margin-bottom: 12px;
+}
+
+/* 步骤列表 */
+.doc-steps { margin-top: 1.5em; }
+
+.doc-step {
+  display: flex;
+  gap: 20px;
+  padding-bottom: 28px;
+  position: relative;
+}
+
+.doc-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 34px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border);
+}
+
+.doc-step__num {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: var(--text-body);
+}
+
+.doc-step__content { padding-top: 4px; }
+
+/* 标签 */
+.doc-tag {
+  display: inline-block;
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 9px;
+}
+
+/* 装饰编号 */
+.doc-hero-num {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 6rem;
+  color: var(--color-border);
+  line-height: 1;
+  user-select: none;
+}
+
+/* ============================================================
+   Fade-up 入场动画
+   ============================================================ */
+.fade-up {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  .fade-up {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  #progress-bar {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Doc page header
+   ============================================================ */
+.doc-header {
+  padding-top: 72px;
+  padding-bottom: var(--section-padding-y);
+  border-bottom: 1px solid var(--color-border);
+  animation: header-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes header-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-header { animation: none; }
+}
+
+/* ============================================================
+   Doc page footer
+   ============================================================ */
+.doc-footer {
+  padding: 40px 0 48px;
+  font-size: var(--text-aux);
+  color: var(--color-text-aux);
+  text-align: center;
+}
+
+/* ============================================================
+   404 page
+   ============================================================ */
+.not-found {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px var(--content-padding-x);
+}
+
+.not-found__num {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 7rem;
+  color: var(--color-border);
+  line-height: 1;
+}
+
+.not-found__title {
+  font-family: var(--font-serif);
+  font-size: var(--text-h2);
+  color: var(--color-text);
+  margin-top: 16px;
+}
+
+.not-found__body {
+  color: var(--color-text-sub);
+  margin-top: 12px;
+  max-width: 380px;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 767px) {
+  :root {
+    --content-padding-x: 20px;
+    --section-padding-y: 40px;
+  }
+
+  .doc-compare-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-hero-num { font-size: 4rem; }
+  .not-found__num { font-size: 5rem; }
+}

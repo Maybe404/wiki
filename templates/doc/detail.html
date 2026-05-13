@@ -1,0 +1,50 @@
+{% extends "base_public.html" %}
+{% load static %}
+
+{% block title %}{{ document.title }} — Docsite{% endblock %}
+
+{% block body %}
+<main class="doc-wrap" role="main">
+
+  <header class="doc-header">
+    <h1>{{ document.title }}</h1>
+  </header>
+
+  <div class="doc-body">
+    {{ content_html|safe }}
+  </div>
+
+</main>
+
+<footer class="doc-wrap">
+  <div class="doc-footer">
+    最后更新于 {{ document.updated_at|date:"Y-m-d" }}
+  </div>
+</footer>
+
+<script>
+  (function () {
+    // AI 生成内容里的 .doc-section 也需要入场动效
+    document.querySelectorAll('.doc-body .doc-section').forEach((el) => {
+      el.classList.add('fade-up');
+    });
+
+    const targets = document.querySelectorAll('.fade-up');
+    if (!targets.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -32px 0px' }
+    );
+
+    targets.forEach((el) => observer.observe(el));
+  })();
+</script>
+{% endblock %}
