@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Docsite{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+
+  <style>
+    /* Design tokens */
+    :root {
+      --color-bg:           #F5F3EE;
+      --color-surface:      #FFFFFF;
+      --color-text:         #1A1814;
+      --color-text-sub:     #6D6A64;
+      --color-text-aux:     #A09C95;
+      --color-accent:       #2C4A3A;
+      --color-gold:         #967B3E;
+      --color-border:       #E2DED6;
+      --color-border-light: #EDEAE4;
+      --color-error-bg:     #FBF3F3;
+      --color-error-text:   #7A2E2E;
+      --color-success-text: #3F5F3A;
+      --color-warning-text: #8A6A2E;
+      --color-link-hover-bg: rgba(44, 74, 58, 0.08);
+      --color-focus-ring:   rgba(150, 123, 62, 0.35);
+
+      --font-serif:   'DM Serif Display', 'Noto Serif SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', system-ui, sans-serif;
+
+      --text-h1:   2.5rem;
+      --text-h2:   1.875rem;
+      --text-h3:   1.375rem;
+      --text-body: 1rem;
+      --text-aux:  0.875rem;
+      --text-label: 0.6875rem;
+
+      --content-max-width: 840px;
+      --content-padding-x: 48px;
+      --section-padding-y: 56px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-weight: 300;
+      line-height: 1.8;
+      font-size: var(--text-body);
+    }
+
+    h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% block body %}{% endblock %}
+</body>
+</html>
