@@ -75,11 +75,7 @@ def tree_reorder(request: HttpRequest) -> JsonResponse:
             node.move(parent, "first-child")
         else:
             # 移到根级别第一位
-            roots = list(
-                Document.get_root_nodes()
-                .filter(is_deleted=False)
-                .exclude(pk=node.pk)
-            )
+            roots = list(Document.get_root_nodes().filter(is_deleted=False).exclude(pk=node.pk))
             if roots:
                 node.move(roots[0], "left")
     except Document.DoesNotExist:  # ty: ignore[unresolved-attribute]
