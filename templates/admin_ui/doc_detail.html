@@ -20,6 +20,17 @@
       <h1 class="doc-header-title">{{ document.title }}</h1>
     </div>
     <div class="doc-header-actions">
+      <!-- 版本历史 -->
+      <button class="btn-secondary" id="btn-versions"
+              onclick="VersionManager.toggleDrawer()" aria-label="版本历史">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="7" cy="7" r="5.5"/>
+          <polyline points="7 4 7 7 9 9"/>
+        </svg>
+        版本
+      </button>
+      <!-- 编辑 -->
       <button class="btn-secondary" id="btn-edit" onclick="EditorManager.enterEditMode()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -98,8 +109,8 @@
     </button>
   </div>
 
-  <!-- Document content -->
-  <div class="doc-body">
+  <!-- Document content (normal view) -->
+  <div class="doc-body" id="doc-body">
     {% if content_html %}
     <div class="doc-content" id="doc-content">
       {# safe: content_html 在写入版本前已经过 bleach（apps/editor/sanitizer.py）清洗 #}
@@ -115,9 +126,72 @@
     {% endif %}
   </div>
 
+  <!-- Diff view (hidden by default, replaces doc-body when comparing) -->
+  <div class="diff-view" id="diff-view">
+    <!-- Action bar -->
+    <div class="diff-action-bar">
+      <button class="diff-btn-back" onclick="VersionManager.exitDiff()" aria-label="返回文档">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 11 4 7 9 3"/>
+        </svg>
+        返回
+      </button>
+      <span class="diff-version-label" id="diff-version-label">选择版本以对比</span>
+      <div class="diff-action-right">
+        <a class="btn-secondary" id="diff-new-tab-link"
+           href="#" target="_blank" rel="noopener"
+           style="text-decoration:none; font-size: var(--text-button); font-weight: 500;">
+          在新标签打开
+        </a>
+        <button class="btn-primary" onclick="VersionManager.showRestoreConfirm()">
+          还原此版本
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div class="diff-loading" id="diff-loading" style="display:none">
+      加载对比数据…
+    </div>
+
+    <!-- Two-column diff -->
+    <div class="diff-columns" id="diff-columns" style="display:none">
+      <div class="diff-col diff-col--left">
+        <div class="diff-col-header">当前版本（新增标绿）</div>
+        <div class="diff-col-content doc-content" id="diff-left-content"></div>
+      </div>
+      <div class="diff-col diff-col--right">
+        <div class="diff-col-header">历史版本（删除标红）</div>
+        <div class="diff-col-content doc-content" id="diff-right-content"></div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /.doc-view -->
 
-<!-- Version note modal (hidden by default) -->
+<!-- Version drawer scrim -->
+<div class="version-drawer-scrim" id="version-drawer-scrim" hidden
+     onclick="VersionManager.closeDrawer()"></div>
+
+<!-- Version drawer -->
+<aside class="version-drawer" id="version-drawer" aria-label="版本历史">
+  <div class="version-drawer-header">
+    <h2 class="version-drawer-title">版本历史</h2>
+    <button class="version-drawer-close" onclick="VersionManager.closeDrawer()" aria-label="关闭版本历史">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" y1="3" x2="13" y2="13"/>
+        <line x1="13" y1="3" x2="3" y2="13"/>
+      </svg>
+    </button>
+  </div>
+  <div class="version-list" id="version-list">
+    <!-- Populated by VersionManager.loadVersions() -->
+  </div>
+</aside>
+
+<!-- Version note modal (editor save) -->
 <div class="modal-overlay" id="version-note-modal" hidden aria-modal="true" role="dialog"
      aria-labelledby="version-note-title">
   <div class="modal" @click.stop>
@@ -134,14 +208,35 @@
     </div>
   </div>
 </div>
+
+<!-- Restore confirm modal -->
+<div class="modal-overlay" id="restore-confirm-modal" hidden aria-modal="true" role="dialog"
+     aria-labelledby="restore-modal-title">
+  <div class="modal" @click.stop>
+    <h2 class="modal-title" id="restore-modal-title">还原此版本</h2>
+    <p class="restore-hint">
+      还原将在当前版本基础上创建一条新版本，所有历史记录完整保留，不会删除任何内容。
+    </p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="VersionManager.hideRestoreConfirm()">取消</button>
+      <button class="btn-primary" onclick="VersionManager.confirmRestore()">确认还原</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/editor.js' %}"></script>
+<script src="{% static 'js/versions.js' %}"></script>
 <script>
   EditorManager.init({
     docId: '{{ document.pk }}',
     csrfToken: '{{ csrf_token }}',
+  });
+  VersionManager.init({
+    docId: '{{ document.pk }}',
+    csrfToken: '{{ csrf_token }}',
+    adminDocUrl: '{% url "admin_doc_detail" document.pk %}',
   });
 </script>
 {% endblock %}
