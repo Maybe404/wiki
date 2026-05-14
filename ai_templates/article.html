@@ -1,0 +1,80 @@
+<!-- ai_templates/article.html
+     标准文章模板：适合技术文档、产品说明、介绍性内容
+     使用方法：复制全部内容，粘贴到导入页面的文本框
+-->
+<div class="article-shell">
+
+  <h1 data-editable="true" data-editable-id="doc-title">
+    文档标题
+  </h1>
+
+  <p data-editable="true" data-editable-id="doc-intro">
+    这是文档的引导段落，概括本文档的核心内容和适用场景。保持简洁，2–3 句话为宜。
+  </p>
+
+  <div class="info-callout">
+    <p data-editable="true" data-editable-id="callout-main">
+      注意：在开始之前，请确保您已完成前置条件。本文档适用于 v2.0 及以上版本。
+    </p>
+  </div>
+
+  <h2 data-editable="true" data-editable-id="section-1-title">
+    第一节：背景与概览
+  </h2>
+
+  <p data-editable="true" data-editable-id="section-1-body-1">
+    在这里描述第一节的主要内容。解释核心概念，帮助读者建立基础认知。可以使用多个段落。
+  </p>
+
+  <p data-editable="true" data-editable-id="section-1-body-2">
+    继续展开第一节的内容。补充细节、举例说明，或列出关键要点。
+  </p>
+
+  <h2 data-editable="true" data-editable-id="section-2-title">
+    第二节：详细说明
+  </h2>
+
+  <p data-editable="true" data-editable-id="section-2-body">
+    第二节的正文内容。这里可以放置技术细节、操作步骤或深度分析。
+  </p>
+
+  <div class="code-block">
+    <pre><code data-editable="true" data-editable-id="code-example">// 示例代码
+const result = await fetchDocument({
+  id: 'doc-001',
+  version: 'latest'
+});
+console.log(result.title);</code></pre>
+  </div>
+
+  <p data-editable="true" data-editable-id="section-2-code-desc">
+    上方示例展示了基本用法。根据实际情况替换参数值。
+  </p>
+
+  <h2 data-editable="true" data-editable-id="section-3-title">
+    第三节：常见问题
+  </h2>
+
+  <p data-editable="true" data-editable-id="faq-intro">
+    以下是使用过程中的常见问题及解答。
+  </p>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="faq-1-q">
+      问：遇到 XXX 错误时怎么处理？
+    </h3>
+    <p data-editable="true" data-editable-id="faq-1-a">
+      答：通常由配置不正确引起。请检查配置文件中的 XXX 字段是否填写完整，然后重启服务。
+    </p>
+  </div>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="faq-2-q">
+      问：如何在生产环境中启用此功能？
+    </h3>
+    <p data-editable="true" data-editable-id="faq-2-a">
+      答：在生产配置文件中将 FEATURE_FLAG 设为 true，并重新部署。注意在预发布环境验证后再上线。
+    </p>
+  </div>
+
+</div>

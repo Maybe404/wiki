@@ -1,0 +1,114 @@
+{% if errors %}
+{# ── 错误状态 ─────────────────────────────────────────────────────────────── #}
+<div class="import-errors" role="alert">
+  <div class="import-errors-header">
+    <span class="badge-danger">{{ errors|length }} 个错误</span>
+    <p class="import-errors-desc">请修正以下问题后重新解析</p>
+  </div>
+
+  <div class="import-error-list">
+    {% for error in errors %}
+    <div class="import-error-item">
+      <span class="error-line-badge" title="行号">
+        {% if error.line %}第 {{ error.line }} 行{% else %}—{% endif %}
+      </span>
+      <div class="error-content">
+        <p class="error-reason">{{ error.reason }}</p>
+        <p class="error-suggestion">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor"
+               stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M1 5.5h9M6.5 2l3.5 3.5L6.5 9"/>
+          </svg>
+          {{ error.suggestion }}
+        </p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% else %}
+{# ── 成功状态：预览 + 确认表单 ─────────────────────────────────────────────── #}
+<div class="import-success">
+
+  <div class="import-success-header">
+    <span class="badge-success">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="1.5 5.5 4.5 8.5 9.5 2.5"/>
+      </svg>
+      校验通过
+    </span>
+    <span class="import-block-count">{{ editable_blocks|length }} 个可编辑区域</span>
+  </div>
+
+  <form method="post" action="{% url 'admin_import_confirm' %}" class="import-confirm-form">
+    {% csrf_token %}
+    {# 原始 HTML 经服务端再校验，不信任此字段内容；bleach 在 confirm 时重新跑 #}
+    <textarea name="raw_html" class="hidden-field">{{ raw_html }}</textarea>
+
+    <div class="import-confirm-fields">
+      <div class="form-group">
+        <label class="form-label" for="import-title">文档标题</label>
+        <input
+          type="text"
+          id="import-title"
+          name="title"
+          class="form-input"
+          value="{{ suggested_title }}"
+          placeholder="未命名文档"
+          maxlength="200"
+          required
+          aria-describedby="import-title-hint"
+        >
+        <p class="form-hint" id="import-title-hint">从 HTML 中自动提取，可修改</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="import-slug">URL Slug</label>
+        <div class="slug-input-wrap">
+          <span class="slug-prefix">/d/</span>
+          <input
+            type="text"
+            id="import-slug"
+            name="slug"
+            class="form-input slug-input"
+            value="{{ suggested_slug }}"
+            placeholder="my-document"
+            pattern="[-\w]+"
+            required
+            aria-describedby="import-slug-hint"
+          >
+        </div>
+        <p class="form-hint" id="import-slug-hint">只允许字母、数字、连字符、下划线；导入后可在发布时修改</p>
+      </div>
+    </div>
+
+    <div class="import-confirm-actions">
+      <button type="submit" class="btn-primary">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 7l3 3 6-6"/>
+        </svg>
+        确认导入
+      </button>
+      <p class="import-confirm-hint">导入为草稿，不会立即公开</p>
+    </div>
+  </form>
+
+  <!-- 文档内容预览（可折叠） -->
+  <details class="import-preview-details">
+    <summary class="import-preview-summary">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" class="preview-chevron" aria-hidden="true">
+        <polyline points="2 4 6 8 10 4"/>
+      </svg>
+      预览文档内容
+    </summary>
+    <div class="doc-preview-wrap">
+      {{ cleaned_html|safe }}
+    </div>
+  </details>
+
+</div>
+{% endif %}

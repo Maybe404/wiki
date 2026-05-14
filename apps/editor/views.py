@@ -1,20 +1,24 @@
 import html as _html
 import json
 import logging
+import secrets
 import uuid
 from typing import cast
 
 from bs4 import BeautifulSoup, Tag
 from diff_match_patch import diff_match_patch
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from apps.documents.models import AuditLog, Document, DocumentVersion
+from apps.documents.utils import build_nested_tree
 
 from .sanitizer import sanitize_inline
+from .validator import ValidationError, extract_title, validate_import_html
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +38,9 @@ def _inject_html_blocks(
 ) -> str:
     """将 blocks 注入 base_html 中对应的 data-editable-id 元素。
 
-    sanitize=True 时对内容执行 sanitize_inline（用户输入路径）；
-    sanitize=False 时直接注入（内部生成的安全内容，已经 html.escape）。
+    sanitize=True 时对内容执行 sanitize_inline（用户输入路径，必须开启）。
+    sanitize=False 仅限内部调用：调用方必须保证 blocks 中每段文本已经过
+    html.escape()，绝对不可将用户直接提交的内容以 sanitize=False 注入。
     """
     wrapped = f'<div id="__root__">{base_html}</div>'
     soup = BeautifulSoup(wrapped, "html.parser")
@@ -306,3 +311,131 @@ def version_restore(request: HttpRequest, pk: uuid.UUID, vid: int) -> JsonRespon
 
     saved_at = timezone.localtime(new_version.created_at).strftime("%H:%M")
     return JsonResponse({"ok": True, "new_version_id": str(new_version.pk), "saved_at": saved_at})
+
+
+# ── HTML 导入 ─────────────────────────────────────────────────────────────────
+
+
+def _generate_unique_slug(title: str) -> str:
+    """从标题生成带随机后缀的唯一 slug。"""
+    base = slugify(title, allow_unicode=True)[:40] or "doc"
+    for _ in range(10):
+        candidate = f"{base}-{secrets.token_hex(3)}"
+        if not Document.objects.filter(slug=candidate, is_deleted=False).exists():
+            return candidate
+    return f"doc-{secrets.token_hex(6)}"
+
+
+@login_required
+def import_document_page(request: HttpRequest) -> HttpResponse:
+    """GET /admin/import/ — 显示 AI HTML 导入页面。"""
+    qs = Document.get_tree().filter(is_deleted=False)
+    tree_data = build_nested_tree(qs)
+    return render(request, "admin_ui/import.html", {"tree_data": tree_data})
+
+
+@login_required
+@require_POST
+def import_validate(request: HttpRequest) -> HttpResponse:
+    """POST /admin/import/validate/ (HTMX) — 校验 HTML，返回错误列表或预览片段。"""
+    raw_html: str = request.POST.get("raw_html", "").strip()
+
+    if not raw_html:
+        empty_error = ValidationError(
+            line=None,
+            reason="请粘贴 HTML 内容",
+            suggestion="将 AI 生成的 HTML 粘贴到文本框后再点击解析",
+        )
+        return render(
+            request,
+            "admin_ui/import_result.html",
+            {
+                "errors": [empty_error],
+                "cleaned_html": "",
+                "editable_blocks": {},
+                "raw_html": raw_html,
+                "suggested_title": "",
+                "suggested_slug": "",
+            },
+        )
+
+    errors, cleaned_html, editable_blocks = validate_import_html(raw_html)
+
+    suggested_title = ""
+    suggested_slug = ""
+    if not errors:
+        suggested_title = extract_title(cleaned_html)
+        suggested_slug = _generate_unique_slug(suggested_title)
+
+    return render(
+        request,
+        "admin_ui/import_result.html",
+        {
+            "errors": errors,
+            "cleaned_html": cleaned_html,
+            "editable_blocks": editable_blocks,
+            "raw_html": raw_html,
+            "suggested_title": suggested_title,
+            "suggested_slug": suggested_slug,
+        },
+    )
+
+
+@login_required
+@require_POST
+def import_confirm(request: HttpRequest) -> HttpResponse:
+    """POST /admin/import/confirm/ — 服务端再校验，入库，跳转到文档详情页。"""
+    raw_html: str = request.POST.get("raw_html", "").strip()
+    title: str = request.POST.get("title", "").strip()[:200] or "未命名文档"
+    slug: str = request.POST.get("slug", "").strip()
+
+    if not raw_html:
+        return redirect("admin_import")
+
+    # 服务端再次校验（幂等安全兜底，不信任前端）
+    errors, cleaned_html, editable_blocks = validate_import_html(raw_html)
+
+    if errors:
+        qs = Document.get_tree().filter(is_deleted=False)
+        tree_data = build_nested_tree(qs)
+        return render(
+            request,
+            "admin_ui/import.html",
+            {
+                "tree_data": tree_data,
+                "page_error": "HTML 内容校验失败，请重新粘贴并解析。",
+            },
+        )
+
+    slug = slugify(slug, allow_unicode=True)[:60]
+    if not slug or Document.objects.filter(slug=slug, is_deleted=False).exists():
+        slug = _generate_unique_slug(title)
+
+    doc = Document.add_root(
+        title=title,
+        slug=slug,
+        status=Document.Status.DRAFT,
+        owner=request.user,  # ty: ignore[unresolved-attribute]
+    )
+
+    DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
+        document=doc,
+        html=cleaned_html,
+        editable_blocks=editable_blocks,
+        author=request.user,  # ty: ignore[unresolved-attribute]
+        is_auto=False,
+        note="从 HTML 导入",
+    )
+
+    AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
+        actor=request.user,  # ty: ignore[unresolved-attribute]
+        action=AuditLog.Action.CREATE,
+        target_type="document",
+        target_id=str(doc.pk),
+        payload={"source": "html_import", "slug": slug, "title": title},
+    )
+
+    username = request.user.get_username()  # ty: ignore[unresolved-attribute]
+    logger.info("Document %s created via HTML import by %s (slug=%s)", doc.pk, username, slug)
+
+    return redirect("admin_doc_detail", pk=doc.pk)

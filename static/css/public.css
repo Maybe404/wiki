@@ -276,6 +276,19 @@ em     { font-style: italic; }
   margin-top: 1.5em;
 }
 
+/* AI 模板容器（DESIGN.md: article-shell） */
+.article-shell {
+  /* 继承外层布局的最大宽度和间距，无需额外定义 */
+}
+
+/* AI 模板内容卡片（DESIGN.md: content-card） */
+.content-card {
+  background: var(--color-surface-soft);
+  border-radius: var(--rounded-md);
+  padding: 24px;
+  margin-top: 1.5em;
+}
+
 /* callout (info-callout style) */
 .info-callout {
   background: var(--color-surface-soft);

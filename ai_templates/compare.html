@@ -1,0 +1,103 @@
+<!-- ai_templates/compare.html
+     对比文档模板：适合方案对比、新旧对比、技术选型说明
+     使用方法：复制全部内容，粘贴到导入页面的文本框
+-->
+<div class="article-shell">
+
+  <h1 data-editable="true" data-editable-id="doc-title">
+    方案对比：方案 A 与方案 B
+  </h1>
+
+  <p data-editable="true" data-editable-id="doc-intro">
+    本文档对比两种方案的核心差异，帮助团队做出合适的技术决策。每种方案均从性能、维护成本、适用场景三个维度评估。
+  </p>
+
+  <div class="info-callout">
+    <p data-editable="true" data-editable-id="decision-summary">
+      结论：对于日活 10 万以下的场景，推荐选用方案 A；规模更大时切换到方案 B 的收益才能覆盖迁移成本。
+    </p>
+  </div>
+
+  <h2 data-editable="true" data-editable-id="comparison-title">
+    核心对比
+  </h2>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th data-editable="true" data-editable-id="table-h-dimension">维度</th>
+        <th data-editable="true" data-editable-id="table-h-a">方案 A</th>
+        <th data-editable="true" data-editable-id="table-h-b">方案 B</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td data-editable="true" data-editable-id="table-r1-dim">性能</td>
+        <td data-editable="true" data-editable-id="table-r1-a">P99 延迟 &lt; 50ms</td>
+        <td data-editable="true" data-editable-id="table-r1-b">P99 延迟 &lt; 10ms</td>
+      </tr>
+      <tr>
+        <td data-editable="true" data-editable-id="table-r2-dim">部署复杂度</td>
+        <td data-editable="true" data-editable-id="table-r2-a">低（单进程）</td>
+        <td data-editable="true" data-editable-id="table-r2-b">高（需要 K8s）</td>
+      </tr>
+      <tr>
+        <td data-editable="true" data-editable-id="table-r3-dim">维护成本</td>
+        <td data-editable="true" data-editable-id="table-r3-a">低，文档完善</td>
+        <td data-editable="true" data-editable-id="table-r3-b">高，需专人运维</td>
+      </tr>
+      <tr>
+        <td data-editable="true" data-editable-id="table-r4-dim">水平扩展</td>
+        <td data-editable="true" data-editable-id="table-r4-a">受限于单机 I/O</td>
+        <td data-editable="true" data-editable-id="table-r4-b">线性扩展，无上限</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 data-editable="true" data-editable-id="detail-title">
+    详细分析
+  </h2>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="card-a-title">
+      方案 A — 简单优先
+    </h3>
+    <p data-editable="true" data-editable-id="card-a-desc">
+      方案 A 基于单体架构，所有逻辑集中在一个进程内。优势是部署简单、调试容易、没有网络分区问题。
+      适合团队规模小、迭代节奏快的阶段。
+    </p>
+    <p data-editable="true" data-editable-id="card-a-limit">
+      局限：单机内存上限约束了缓存容量。当读请求量超过 5000 QPS 时需要考虑扩容方案。
+    </p>
+  </div>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="card-b-title">
+      方案 B — 扩展优先
+    </h3>
+    <p data-editable="true" data-editable-id="card-b-desc">
+      方案 B 采用分布式缓存层，数据分片存储在多个节点。可以水平扩展到数百台机器，适合大规模生产场景。
+    </p>
+    <p data-editable="true" data-editable-id="card-b-limit">
+      局限：引入了网络延迟和分布式一致性问题。需要专门的 SRE 团队负责运维，初期投入较高。
+    </p>
+  </div>
+
+  <h2 data-editable="true" data-editable-id="migration-title">
+    迁移路径
+  </h2>
+
+  <p data-editable="true" data-editable-id="migration-desc">
+    推荐从方案 A 起步，在以下条件同时满足时启动迁移到方案 B 的评估：
+  </p>
+
+  <div class="code-block">
+    <pre><code data-editable="true" data-editable-id="migration-criteria">迁移触发条件：
+1. 日活用户 > 100,000
+2. 峰值 QPS > 8,000
+3. 缓存命中率 < 85%（连续 2 周）
+
+评估周期：每季度复查一次上述指标</code></pre>
+  </div>
+
+</div>

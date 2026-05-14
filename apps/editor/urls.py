@@ -1,6 +1,14 @@
 from django.urls import path
 
-from .views import save_document, version_diff_api, version_list_api, version_restore
+from .views import (
+    import_confirm,
+    import_document_page,
+    import_validate,
+    save_document,
+    version_diff_api,
+    version_list_api,
+    version_restore,
+)
 
 urlpatterns = [
     path("admin/doc/<uuid:pk>/save/", save_document, name="admin_doc_save"),
@@ -15,4 +23,7 @@ urlpatterns = [
         version_restore,
         name="admin_doc_version_restore",
     ),
+    path("admin/import/", import_document_page, name="admin_import"),
+    path("admin/import/validate/", import_validate, name="admin_import_validate"),
+    path("admin/import/confirm/", import_confirm, name="admin_import_confirm"),
 ]

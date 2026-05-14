@@ -1,0 +1,129 @@
+<!-- ai_templates/steps.html
+     步骤指南模板：适合操作手册、部署文档、上手教程
+     使用方法：复制全部内容，粘贴到导入页面的文本框
+-->
+<div class="article-shell">
+
+  <h1 data-editable="true" data-editable-id="doc-title">
+    快速上手指南
+  </h1>
+
+  <p data-editable="true" data-editable-id="doc-intro">
+    按照以下步骤完成初始配置，大约需要 15 分钟。完成后你将拥有一个可用的本地开发环境。
+  </p>
+
+  <div class="info-callout">
+    <p data-editable="true" data-editable-id="prereq">
+      前置条件：请确保已安装 Node.js 18+、Git 2.40+ 和 Docker Desktop 4.x。
+      可在终端运行 <code>node -v</code> 确认版本。
+    </p>
+  </div>
+
+  <h2 data-editable="true" data-editable-id="steps-title">
+    操作步骤
+  </h2>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="step-1-title">
+      步骤 1：克隆仓库
+    </h3>
+    <p data-editable="true" data-editable-id="step-1-desc">
+      使用以下命令将项目代码克隆到本地。推荐使用 SSH 协议，避免频繁输入密码。
+    </p>
+    <div class="code-block">
+      <pre><code data-editable="true" data-editable-id="step-1-code">git clone git@github.com:your-org/your-project.git
+cd your-project</code></pre>
+    </div>
+    <p data-editable="true" data-editable-id="step-1-note">
+      克隆成功后，进入项目目录。后续所有命令均在此目录下执行。
+    </p>
+  </div>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="step-2-title">
+      步骤 2：安装依赖
+    </h3>
+    <p data-editable="true" data-editable-id="step-2-desc">
+      运行以下命令安装项目依赖。首次安装可能需要 2–3 分钟，具体取决于网络速度。
+    </p>
+    <div class="code-block">
+      <pre><code data-editable="true" data-editable-id="step-2-code">npm install</code></pre>
+    </div>
+    <p data-editable="true" data-editable-id="step-2-note">
+      安装完成后，<code>node_modules</code> 目录约占用 200MB 磁盘空间。
+    </p>
+  </div>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="step-3-title">
+      步骤 3：配置环境变量
+    </h3>
+    <p data-editable="true" data-editable-id="step-3-desc">
+      复制示例配置文件并填写本地环境的密钥。不要将 <code>.env</code> 提交到版本控制。
+    </p>
+    <div class="code-block">
+      <pre><code data-editable="true" data-editable-id="step-3-code">cp .env.example .env
+# 编辑 .env，填写以下字段：
+# DATABASE_URL=postgresql://localhost:5432/mydb
+# SECRET_KEY=your-secret-key-here
+# API_ENDPOINT=https://api.example.com</code></pre>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <h3 data-editable="true" data-editable-id="step-4-title">
+      步骤 4：启动开发服务器
+    </h3>
+    <p data-editable="true" data-editable-id="step-4-desc">
+      运行以下命令启动本地开发服务器。成功后在浏览器访问 <code>http://localhost:3000</code>。
+    </p>
+    <div class="code-block">
+      <pre><code data-editable="true" data-editable-id="step-4-code">npm run dev
+
+# 预期输出：
+# ✓ Ready in 2.1s
+# ○ Local: http://localhost:3000</code></pre>
+    </div>
+    <p data-editable="true" data-editable-id="step-4-note">
+      开发服务器支持热重载，修改代码后无需手动重启。
+    </p>
+  </div>
+
+  <h2 data-editable="true" data-editable-id="verify-title">
+    验证安装
+  </h2>
+
+  <p data-editable="true" data-editable-id="verify-desc">
+    打开浏览器访问以下地址，验证各功能是否正常：
+  </p>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th data-editable="true" data-editable-id="verify-table-h1">地址</th>
+        <th data-editable="true" data-editable-id="verify-table-h2">预期结果</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td data-editable="true" data-editable-id="verify-r1-url">http://localhost:3000</td>
+        <td data-editable="true" data-editable-id="verify-r1-result">显示主页</td>
+      </tr>
+      <tr>
+        <td data-editable="true" data-editable-id="verify-r2-url">http://localhost:3000/health</td>
+        <td data-editable="true" data-editable-id="verify-r2-result">返回 <code>{"status":"ok"}</code></td>
+      </tr>
+      <tr>
+        <td data-editable="true" data-editable-id="verify-r3-url">http://localhost:3000/admin</td>
+        <td data-editable="true" data-editable-id="verify-r3-result">显示登录页</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-callout">
+    <p data-editable="true" data-editable-id="troubleshoot">
+      遇到问题？查看 <code>logs/dev.log</code> 获取详细错误信息，或在 Slack 的 #dev-help 频道提问。
+    </p>
+  </div>
+
+</div>

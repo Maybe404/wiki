@@ -1,0 +1,159 @@
+{% extends "admin_ui/base_admin.html" %}
+{% load static doc_tree %}
+
+{% block title %}从 HTML 导入{% endblock %}
+
+{% block sidebar_tree %}
+{% csrf_token %}
+{% render_admin_tree tree_data %}
+{% endblock %}
+
+{% block main_content %}
+<div class="import-page">
+
+  <div class="import-page-header">
+    <div class="import-page-header-inner">
+      <h1 class="import-page-title">从 HTML 导入</h1>
+      <p class="import-page-desc">
+        将 Codex 或 Claude Code 生成的 HTML 粘贴到下方，系统将自动校验格式并导入为可编辑文档。
+      </p>
+      <a href="{% url 'admin_import' %}#rules" class="import-guide-link">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="5.5"/>
+          <line x1="6.5" y1="5.5" x2="6.5" y2="9"/>
+          <circle cx="6.5" cy="3.8" r="0.6" fill="currentColor" stroke="none"/>
+        </svg>
+        查看模板规范
+      </a>
+    </div>
+  </div>
+
+  {% if page_error %}
+  <div class="import-page-error" role="alert">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="7" cy="7" r="6"/>
+      <line x1="7" y1="4.5" x2="7" y2="7.5"/>
+      <circle cx="7" cy="9.5" r="0.6" fill="currentColor" stroke="none"/>
+    </svg>
+    {{ page_error }}
+  </div>
+  {% endif %}
+
+  <div class="import-body">
+
+    <!-- 左侧：输入区 -->
+    <div class="import-input-panel">
+      <form id="import-form"
+            hx-post="{% url 'admin_import_validate' %}"
+            hx-target="#import-result"
+            hx-swap="innerHTML"
+            hx-indicator=".import-spinner">
+        {% csrf_token %}
+        <div class="import-textarea-header">
+          <label class="import-textarea-label" for="import-textarea">HTML 内容</label>
+          <span class="import-textarea-hint">支持完整 HTML 文档或片段</span>
+        </div>
+        <textarea
+          id="import-textarea"
+          name="raw_html"
+          class="import-textarea"
+          placeholder="粘贴 AI 生成的 HTML 代码…"
+          spellcheck="false"
+          autocomplete="off"
+          aria-label="HTML 内容"
+        ></textarea>
+        <div class="import-form-actions">
+          <button type="submit" class="btn-primary import-parse-btn">
+            <span class="import-spinner htmx-indicator" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+                   stroke-width="1.5" aria-hidden="true">
+                <path d="M6.5 1.5A5 5 0 1 1 2 7" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <svg class="import-parse-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"
+                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                 stroke-linejoin="round" aria-hidden="true">
+              <polyline points="2 7 5 10 11 4"/>
+            </svg>
+            解析
+          </button>
+          <a href="{% url 'admin_dashboard' %}" class="btn-secondary">返回</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- 右侧：结果区 (HTMX target) -->
+    <div id="import-result" class="import-result">
+      <div class="import-result-empty">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor"
+             stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="6" y="4" width="20" height="24" rx="3"/>
+          <line x1="11" y1="11" x2="21" y2="11"/>
+          <line x1="11" y1="15" x2="21" y2="15"/>
+          <line x1="11" y1="19" x2="17" y2="19"/>
+        </svg>
+        <p>粘贴 HTML 后点击「解析」</p>
+        <p class="import-result-empty-sub">系统将检查格式并显示预览</p>
+      </div>
+    </div>
+
+  </div><!-- /.import-body -->
+
+  <!-- 规范说明（锚点） -->
+  <div class="import-rules" id="rules">
+    <h2 class="import-rules-title">HTML 模板规范</h2>
+
+    <div class="import-rules-grid">
+      <div class="import-rule-card">
+        <h3 class="import-rule-card-title">必须使用的 class</h3>
+        <ul class="import-rule-list">
+          <li><code>article-shell</code> — 文章外层容器</li>
+          <li><code>info-callout</code> — 提示/注意框</li>
+          <li><code>content-card</code> — 内容卡片</li>
+          <li><code>code-block</code> — 代码块</li>
+          <li><code>table</code> — 表格</li>
+        </ul>
+      </div>
+
+      <div class="import-rule-card">
+        <h3 class="import-rule-card-title">可编辑标记规则</h3>
+        <ul class="import-rule-list">
+          <li>所有文字区域加 <code>data-editable="true"</code></li>
+          <li>同时加 <code>data-editable-id="唯一ID"</code></li>
+          <li>ID 全文唯一，只用字母/数字/连字符</li>
+          <li>不允许嵌套 data-editable 区域</li>
+        </ul>
+      </div>
+
+      <div class="import-rule-card import-rule-card--danger">
+        <h3 class="import-rule-card-title">严禁事项</h3>
+        <ul class="import-rule-list">
+          <li>禁止内联 <code>style</code> 属性</li>
+          <li>禁止 <code>&lt;script&gt;</code>、<code>&lt;iframe&gt;</code>、<code>&lt;style&gt;</code></li>
+          <li>禁止 <code>&lt;link&gt;</code> 引入外部资源</li>
+          <li>禁止 <code>on*</code> 事件属性</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.import-page -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // HTMX 加载中：旋转 spinner，隐藏解析图标
+  document.body.addEventListener('htmx:beforeRequest', function(e) {
+    if (e.detail.elt.id === 'import-form' || e.detail.elt.closest('#import-form')) {
+      document.querySelector('.import-parse-icon')?.style.setProperty('display', 'none');
+    }
+  });
+  document.body.addEventListener('htmx:afterRequest', function(e) {
+    if (e.detail.elt.id === 'import-form' || e.detail.elt.closest('#import-form')) {
+      document.querySelector('.import-parse-icon')?.style.removeProperty('display');
+    }
+  });
+</script>
+{% endblock %}
