@@ -214,12 +214,13 @@
        x-transition:leave="transition ease-in duration-100"
        x-transition:leave-start="opacity-100"
        x-transition:leave-end="opacity-0"
-       @click.self="searchOpen = false"
+       @click.self="closeSearch()"
        style="display:none;">
     <div class="search-modal"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0">
+         x-transition:enter-end="opacity-100 translate-y-0"
+         role="dialog" aria-label="搜索文档">
       <div class="search-input-wrap">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
              stroke-width="1.5" stroke-linecap="round">
@@ -227,9 +228,55 @@
           <line x1="10" y1="10" x2="14" y2="14"/>
         </svg>
         <input class="search-input" type="text" placeholder="搜索文档标题或内容…"
-               x-ref="searchInput" aria-label="搜索">
+               x-ref="searchInput"
+               x-model="searchQuery"
+               @input="onSearchInput()"
+               @keydown="onSearchKeydown($event)"
+               aria-label="搜索"
+               autocomplete="off"
+               spellcheck="false">
       </div>
-      <div class="search-hint">搜索功能将在阶段 9 实现 · 按 Esc 关闭</div>
+
+      <!-- 空状态 -->
+      <div class="search-hint"
+           x-show="!searchQuery && !searchLoading && searchGroups.length === 0">
+        输入关键词搜索文档 · 按 Esc 关闭
+      </div>
+
+      <!-- Loading -->
+      <div class="search-loading" x-show="searchLoading" style="display:none;">搜索中…</div>
+
+      <!-- 无结果 -->
+      <div class="search-hint"
+           x-show="searchQuery && !searchLoading && searchGroups.length === 0"
+           style="display:none;">
+        未找到「<span x-text="searchQuery"></span>」相关文档
+      </div>
+
+      <!-- 结果列表 -->
+      <div class="search-results" x-show="searchGroups.length > 0" style="display:none;"
+           role="listbox">
+        <template x-for="(group, gi) in searchGroups" :key="gi">
+          <div class="search-group">
+            <div class="search-group-label" x-text="group.label"></div>
+            <template x-for="(item, ii) in group.items" :key="item.doc_id">
+              <button
+                class="search-result-item"
+                :class="{'is-active': searchFlatIndex(gi, ii) === searchActiveIdx}"
+                @click="goToResult(item)"
+                @mouseenter="searchActiveIdx = searchFlatIndex(gi, ii)"
+                role="option"
+                :aria-selected="searchFlatIndex(gi, ii) === searchActiveIdx">
+                <div class="search-result-title">
+                  <span :class="'search-result-status search-result-status--' + item.status"></span>
+                  <span x-text="item.title"></span>
+                </div>
+                <div class="search-result-snippet" x-html="item.snippet"></div>
+              </button>
+            </template>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 
@@ -295,9 +342,88 @@
     function adminApp() {
       return {
         searchOpen: false,
+        searchQuery: '',
+        searchGroups: [],
+        searchActiveIdx: -1,
+        searchLoading: false,
+        _searchTimer: null,
+
         newDocOpen: false,
         sidebarCollapsed: false,
         ctxMenu: { open: false, x: 0, y: 0, nodeId: null },
+
+        // ── 搜索 ──────────────────────────────────────────────────
+        closeSearch() {
+          this.searchOpen = false;
+          this.searchQuery = '';
+          this.searchGroups = [];
+          this.searchActiveIdx = -1;
+        },
+
+        onSearchInput() {
+          clearTimeout(this._searchTimer);
+          const q = this.searchQuery.trim();
+          if (!q) {
+            this.searchGroups = [];
+            this.searchActiveIdx = -1;
+            this.searchLoading = false;
+            return;
+          }
+          this.searchLoading = true;
+          this._searchTimer = setTimeout(() => this._doSearch(q), 150);
+        },
+
+        async _doSearch(q) {
+          try {
+            const res = await fetch('/admin/search?q=' + encodeURIComponent(q), {
+              headers: { 'X-CSRFToken': getCsrfToken() },
+            });
+            if (!res.ok) throw new Error('search failed');
+            const data = await res.json();
+            if (this.searchQuery.trim() === q) {
+              this.searchGroups = data.groups || [];
+              this.searchActiveIdx = this.searchGroups.length > 0 ? 0 : -1;
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            if (this.searchQuery.trim() === q) this.searchLoading = false;
+          }
+        },
+
+        // 将二维 (groupIndex, itemIndex) 映射为一维 activeIdx
+        searchFlatIndex(gi, ii) {
+          let idx = 0;
+          for (let g = 0; g < gi; g++) idx += (this.searchGroups[g]?.items?.length || 0);
+          return idx + ii;
+        },
+
+        // 所有结果展平
+        _flatResults() {
+          return this.searchGroups.flatMap(g => g.items || []);
+        },
+
+        onSearchKeydown(e) {
+          const flat = this._flatResults();
+          if (flat.length === 0) return;
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            this.searchActiveIdx = (this.searchActiveIdx + 1) % flat.length;
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.searchActiveIdx = (this.searchActiveIdx - 1 + flat.length) % flat.length;
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const item = flat[this.searchActiveIdx >= 0 ? this.searchActiveIdx : 0];
+            if (item) this.goToResult(item);
+          }
+        },
+
+        goToResult(item) {
+          this.closeSearch();
+          window.location.href = item.url;
+        },
 
         init() {
           // ⌘K / Ctrl+K
@@ -308,7 +434,7 @@
               this.$nextTick(() => this.$refs.searchInput?.focus());
             }
             if (e.key === 'Escape') {
-              this.searchOpen = false;
+              if (this.searchOpen) { this.closeSearch(); return; }
               this.newDocOpen = false;
               this.ctxMenu.open = false;
             }

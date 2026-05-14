@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
+from apps.documents.fts import sync_fts_plain_text
 from apps.documents.models import AuditLog, Document, DocumentVersion
 from apps.documents.utils import build_nested_tree
 
@@ -181,6 +182,7 @@ def save_document(request: HttpRequest, pk: uuid.UUID) -> JsonResponse:
     )
 
     Document.objects.filter(pk=doc.pk).update(updated_at=timezone.now())
+    sync_fts_plain_text(str(doc.pk), new_html)
 
     AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
         actor=request.user,  # ty: ignore[unresolved-attribute]
@@ -305,6 +307,8 @@ def version_restore(request: HttpRequest, pk: uuid.UUID, vid: int) -> JsonRespon
             "new_version": str(new_version.pk),
         },
     )
+
+    sync_fts_plain_text(str(doc.pk), str(historical.html))
 
     username = request.user.get_username()  # ty: ignore[unresolved-attribute]
     logger.info("Document %s restored from version %s by %s", doc.pk, vid, username)
@@ -434,6 +438,8 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
         target_id=str(doc.pk),
         payload={"source": "html_import", "slug": slug, "title": title},
     )
+
+    sync_fts_plain_text(str(doc.pk), cleaned_html)
 
     username = request.user.get_username()  # ty: ignore[unresolved-attribute]
     logger.info("Document %s created via HTML import by %s (slug=%s)", doc.pk, username, slug)

@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 
+from .fts import search_documents
 from .models import Document, DocumentVersion, SlugAlias
 from .utils import build_nested_tree
 
@@ -114,3 +115,13 @@ def tree_reorder(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"error": str(exc)}, status=500)
 
     return JsonResponse({"ok": True})
+
+
+@login_required
+def search_api(request: HttpRequest) -> JsonResponse:
+    """GET /admin/search?q=xxx — FTS5 全文搜索，返回分组 JSON。"""
+    q = request.GET.get("q", "").strip()
+    if not q:
+        return JsonResponse({"groups": []})
+    result = search_documents(q)
+    return JsonResponse(result)
