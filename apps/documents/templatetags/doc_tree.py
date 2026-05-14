@@ -61,7 +61,8 @@ def _render_node(item: dict) -> str:
         f'<li class="tree-node" data-id="{node_id}"'
         f' @contextmenu.prevent="ctxMenu.open=true;'
         f" ctxMenu.x=$event.clientX; ctxMenu.y=$event.clientY; ctxMenu.nodeId='{node_id}'\">"
-        f'<div class="tree-node-row" tabindex="0" role="treeitem" aria-label="{title}">'
+        f'<div class="tree-node-row" tabindex="0" role="treeitem" aria-label="{title}"'
+        f' data-doc-url="/admin/doc/{node_id}/">'
         f"{toggle}"
         f'<span class="status-dot status-dot--{status}" title="{status}"></span>'
         f'<span class="node-title">{title}</span>'

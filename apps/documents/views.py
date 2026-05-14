@@ -1,12 +1,14 @@
 import json
+import uuid
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 
 from .models import Document, DocumentVersion, SlugAlias
+from .utils import build_nested_tree
 
 
 class DocumentDetailView(DetailView):
@@ -45,6 +47,34 @@ class DocumentDetailView(DetailView):
         ctx["version"] = version
         ctx["content_html"] = version.html if version else ""
         return ctx
+
+
+@login_required
+def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
+    """管理端文档详情页 /admin/doc/<pk>/，含编辑入口。"""
+    doc = get_object_or_404(Document, pk=pk, is_deleted=False)
+
+    # 优先取最新命名版本，没有就取最新自动版本
+    version: DocumentVersion | None = (
+        doc.versions.filter(is_auto=False).first()  # type: ignore[unresolved-attribute]
+        or doc.versions.first()  # type: ignore[unresolved-attribute]
+    )
+    content_html = version.html if version else ""
+
+    # 侧边栏目录树
+    qs = Document.get_tree().filter(is_deleted=False)
+    tree_data = build_nested_tree(qs)
+
+    return render(
+        request,
+        "admin_ui/doc_detail.html",
+        {
+            "document": doc,
+            "version": version,
+            "content_html": content_html,
+            "tree_data": tree_data,
+        },
+    )
 
 
 @login_required
