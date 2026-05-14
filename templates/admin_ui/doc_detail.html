@@ -42,6 +42,21 @@
               onclick="EditorManager.exitEditMode()">
         退出编辑
       </button>
+      {% if document.status == 'draft' %}
+      <button class="btn-primary" id="btn-publish"
+              onclick="PublishManager.openPublishDrawer()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6.5 1v8M3 5l3.5-4 3.5 4M2 11h9"/>
+        </svg>
+        发布
+      </button>
+      {% elif document.status == 'published' %}
+      <button class="btn-secondary" id="btn-unpublish"
+              onclick="PublishManager.openUnpublishDrawer()">
+        撤回发布
+      </button>
+      {% endif %}
     </div>
   </div>
 
@@ -223,11 +238,90 @@
     </div>
   </div>
 </div>
+<!-- ── Publish drawer ──────────────────────────────────────────────────── -->
+{% if document.status == 'draft' %}
+<div class="publish-drawer-scrim" id="publish-drawer-scrim" hidden
+     onclick="PublishManager.closePublishDrawer()"></div>
+
+<aside class="publish-drawer" id="publish-drawer" aria-label="发布文档" role="dialog">
+  <div class="publish-drawer-header">
+    <h2 class="publish-drawer-title">发布文档</h2>
+    <button class="publish-drawer-close" onclick="PublishManager.closePublishDrawer()"
+            aria-label="关闭">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" y1="3" x2="13" y2="13"/>
+        <line x1="13" y1="3" x2="3" y2="13"/>
+      </svg>
+    </button>
+  </div>
+  <div class="publish-drawer-body">
+    <p class="publish-drawer-hint">发布后，所有人都可通过以下链接访问此文档。</p>
+
+    <div class="publish-field">
+      <label class="publish-field-label" for="publish-slug-input">文档 Slug</label>
+      <input class="modal-input" id="publish-slug-input" type="text"
+             placeholder="my-document" maxlength="200" autocomplete="off" spellcheck="false"
+             oninput="PublishManager.onSlugInput(event)">
+    </div>
+
+    <div class="publish-url-block">
+      <span class="publish-url-label">发布地址</span>
+      <code class="publish-url-preview" id="publish-url-preview">/d/{{ document.slug }}/</code>
+    </div>
+
+    <p class="publish-warning">即将发布到上方地址，所有人都将可访问。</p>
+
+    <p class="publish-error" id="publish-error" role="alert" aria-live="polite"></p>
+
+    <div class="publish-drawer-actions">
+      <button class="btn-secondary" onclick="PublishManager.closePublishDrawer()">取消</button>
+      <button class="btn-primary" id="publish-confirm-btn"
+              onclick="PublishManager.confirmPublish()">确认发布</button>
+    </div>
+  </div>
+</aside>
+{% endif %}
+
+<!-- ── Unpublish drawer ────────────────────────────────────────────────── -->
+{% if document.status == 'published' %}
+<div class="publish-drawer-scrim" id="unpublish-drawer-scrim" hidden
+     onclick="PublishManager.closeUnpublishDrawer()"></div>
+
+<aside class="publish-drawer" id="unpublish-drawer" aria-label="撤回发布" role="dialog">
+  <div class="publish-drawer-header">
+    <h2 class="publish-drawer-title">撤回发布</h2>
+    <button class="publish-drawer-close" onclick="PublishManager.closeUnpublishDrawer()"
+            aria-label="关闭">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+        <line x1="3" y1="3" x2="13" y2="13"/>
+        <line x1="13" y1="3" x2="3" y2="13"/>
+      </svg>
+    </button>
+  </div>
+  <div class="publish-drawer-body">
+    <p class="publish-drawer-hint">
+      撤回后，公开链接
+      <code class="publish-url-inline">/d/{{ document.slug }}/</code>
+      将立即返回 404。已登录用户仍可在后台查看和编辑此文档。
+    </p>
+    <p class="publish-drawer-hint" style="margin-top: 8px;">首次发布时间不会被清除。</p>
+    <div class="publish-drawer-actions" style="margin-top: 32px;">
+      <button class="btn-secondary" onclick="PublishManager.closeUnpublishDrawer()">取消</button>
+      <button class="btn-danger" id="unpublish-confirm-btn"
+              onclick="PublishManager.confirmUnpublish()">确认撤回</button>
+    </div>
+  </div>
+</aside>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/editor.js' %}"></script>
 <script src="{% static 'js/versions.js' %}"></script>
+<script src="{% static 'js/publish.js' %}"></script>
 <script>
   EditorManager.init({
     docId: '{{ document.pk }}',
@@ -237,6 +331,11 @@
     docId: '{{ document.pk }}',
     csrfToken: '{{ csrf_token }}',
     adminDocUrl: '{% url "admin_doc_detail" document.pk %}',
+  });
+  PublishManager.init({
+    docId: '{{ document.pk }}',
+    csrfToken: '{{ csrf_token }}',
+    currentSlug: '{{ document.slug }}',
   });
 </script>
 {% endblock %}
