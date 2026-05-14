@@ -7,34 +7,19 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&family=Noto+Sans+SC:wght@400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/public.css' %}">
 
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <!-- 进度条：Alpine 动态写入宽度，无法避免 style binding -->
-  <div id="progress-bar-wrap">
-    <div id="progress-bar" x-data x-bind:style="'width:' + $store.scroll.pct + '%'"></div>
-  </div>
+
+  <nav class="pub-nav" aria-label="主导航">
+    <a href="/" class="pub-nav-brand">Docsite</a>
+  </nav>
 
   {% block body %}{% endblock %}
 
-  <!-- Alpine.js：进度条 store -->
-  <script>
-    document.addEventListener('alpine:init', () => {
-      Alpine.store('scroll', {
-        pct: 0,
-        update() {
-          const scrollable = document.body.scrollHeight - window.innerHeight;
-          this.pct = scrollable > 0 ? Math.min(100, (window.scrollY / scrollable) * 100) : 0;
-        }
-      });
-    });
-    window.addEventListener('scroll', () => {
-      if (window.Alpine) Alpine.store('scroll').update();
-    }, { passive: true });
-  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </body>
 </html>

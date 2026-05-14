@@ -9,61 +9,114 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&family=Noto+Sans+SC:wght@400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
 
-  <!-- Design tokens (same as base.html) -->
+  <!-- Design tokens -->
   <style>
     :root {
-      --color-bg:           #F5F3EE;
-      --color-surface:      #FFFFFF;
-      --color-text:         #1A1814;
-      --color-text-sub:     #6D6A64;
-      --color-text-aux:     #A09C95;
-      --color-accent:       #2C4A3A;
-      --color-gold:         #967B3E;
-      --color-border:       #E2DED6;
-      --color-border-light: #EDEAE4;
-      --color-error-bg:     #FBF3F3;
-      --color-error-text:   #7A2E2E;
-      --color-success-text: #3F5F3A;
-      --color-warning-text: #8A6A2E;
-      --color-link-hover-bg: rgba(44, 74, 58, 0.08);
-      --color-focus-ring:   rgba(150, 123, 62, 0.35);
+      --color-primary:           #cc785c;
+      --color-primary-hover:     #b86950;
+      --color-primary-pressed:   #a9583e;
+      --color-primary-disabled:  #e6dfd8;
+      --color-on-primary:        #ffffff;
 
-      --font-serif:   'DM Serif Display', 'Noto Serif SC', Georgia, serif;
-      --font-sans:    'Noto Sans SC', system-ui, sans-serif;
+      --color-canvas:            #faf9f5;
+      --color-surface-soft:      #f5f0e8;
+      --color-surface-card:      #efe9de;
+      --color-surface-strong:    #e8e0d2;
+      --color-surface-raised:    #fffdf8;
+      --color-surface-overlay:   rgba(20, 20, 19, 0.38);
+      --color-surface-dark:      #181715;
+      --color-surface-dark-soft: #1f1e1b;
 
-      --text-h1:   2.5rem;
-      --text-h2:   1.875rem;
-      --text-h3:   1.375rem;
-      --text-body: 1rem;
-      --text-aux:  0.875rem;
-      --text-label: 0.6875rem;
+      --color-hairline:          #e6dfd8;
+      --color-hairline-soft:     #ebe6df;
+      --color-hairline-strong:   #d8cec2;
 
-      --content-max-width: 840px;
-      --content-padding-x: 48px;
-      --section-padding-y: 56px;
+      --color-ink:               #141413;
+      --color-ink-strong:        #252523;
+      --color-ink-body:          #3d3d3a;
+      --color-ink-muted:         #6c6a64;
+      --color-ink-subtle:        #8e8b82;
+      --color-ink-on-dark:       #faf9f5;
+      --color-ink-on-dark-muted: #a09d96;
+
+      --color-success:           #4f9b65;
+      --color-success-surface:   #edf5ee;
+      --color-warning:           #b9832f;
+      --color-warning-surface:   #fbf1df;
+      --color-danger:            #c64545;
+      --color-danger-surface:    #fbebea;
+
+      --color-focus-ring:        rgba(204, 120, 92, 0.28);
+      --color-link-hover-fill:   rgba(204, 120, 92, 0.08);
+      --color-selection:         rgba(204, 120, 92, 0.18);
+
+      --font-serif: 'Cormorant Garamond', 'Noto Serif SC', Georgia, serif;
+      --font-sans:  'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono:  'JetBrains Mono', 'SF Mono', Consolas, ui-monospace, monospace;
+
+      --text-display-xl:   56px;
+      --text-display-lg:   44px;
+      --text-display-md:   32px;
+      --text-display-sm:   24px;
+      --text-title-lg:     22px;
+      --text-title-md:     18px;
+      --text-body-reading: 17px;
+      --text-body:         16px;
+      --text-body-sm:      14px;
+      --text-meta:         13px;
+      --text-label:        12px;
+      --text-button:       14px;
+      --text-mono:         13px;
+
+      --content-max-width:  760px;
+      --content-padding-x:  48px;
+      --section-padding-y:  96px;
+      --top-nav-height:     64px;
+      --sidebar-width:      264px;
+      --toc-width:          220px;
+
+      --shadow-focus:    0 0 0 3px var(--color-focus-ring);
+      --shadow-floating: 0 16px 48px rgba(20, 20, 19, 0.10);
+      --shadow-popover:  0 12px 32px rgba(20, 20, 19, 0.12);
+
+      --rounded-xs:   4px;
+      --rounded-sm:   6px;
+      --rounded-md:   8px;
+      --rounded-xl:   12px;
+      --rounded-pill: 9999px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--color-bg);
-      color: var(--color-text);
+      background: var(--color-canvas);
+      color: var(--color-ink-body);
       font-family: var(--font-sans);
-      font-weight: 300;
-      line-height: 1.6;
+      font-weight: 400;
+      line-height: 1.68;
       font-size: var(--text-body);
       overflow: hidden;
     }
 
-    h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; }
+    ::selection { background: var(--color-selection); }
+
+    h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; letter-spacing: 0; color: var(--color-ink); }
 
     button { font-family: inherit; }
 
     *:focus-visible {
-      outline: 2px solid var(--color-focus-ring);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--shadow-focus);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 
@@ -82,7 +135,7 @@
         <line x1="2" y1="13.5" x2="16" y2="13.5"/>
       </svg>
     </button>
-    <span style="margin-left:10px;font-size:var(--text-aux);color:var(--color-text-sub);">Docsite 管理</span>
+    <span class="admin-topbar-brand">Docsite 管理</span>
   </header>
 
   <div class="admin-layout">
@@ -376,22 +429,22 @@
     }
 
     function showToast(msg) {
+      const s = getComputedStyle(document.documentElement);
       const t = document.createElement('div');
       t.textContent = msg;
       Object.assign(t.style, {
         position: 'fixed',
         bottom: '24px',
         right: '24px',
-        background: '#F5F3EE',
-        color: '#3F5F3A',
-        border: '1px solid #E2DED6',
-        borderRadius: '6px',
-        padding: '10px 16px',
-        fontSize: '0.875rem',
-        fontFamily: "'Noto Sans SC', sans-serif",
-        fontWeight: '300',
+        background: s.getPropertyValue('--color-surface-dark').trim(),
+        color: s.getPropertyValue('--color-ink-on-dark').trim(),
+        borderRadius: s.getPropertyValue('--rounded-md').trim(),
+        padding: '12px 16px',
+        fontSize: s.getPropertyValue('--text-body-sm').trim(),
+        fontFamily: s.getPropertyValue('--font-sans').trim(),
+        fontWeight: '400',
         zIndex: '9999',
-        boxShadow: '0 2px 8px rgba(26,24,20,0.1)',
+        boxShadow: s.getPropertyValue('--shadow-popover').trim(),
         transition: 'opacity 400ms',
       });
       document.body.appendChild(t);
