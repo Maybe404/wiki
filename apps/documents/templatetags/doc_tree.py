@@ -85,3 +85,35 @@ def render_admin_tree(tree_data: list) -> str:
     """渲染文档目录树为嵌套 HTML。接收 build_nested_tree() 的返回值。"""
     inner = "".join(_render_node(item) for item in tree_data)
     return mark_safe(f'<ul class="tree-root sortable-list" data-parent-id="">{inner}</ul>')
+
+
+# ---------- 公开端目录树（只读，无操作按钮，无状态点）----------
+
+
+def _render_public_node(item: dict, active_slug: str) -> str:
+    node = item["node"]
+    children: list = item.get("children", [])
+    title = escape(node.title)
+    slug = escape(node.slug)
+    is_active = " is-active" if str(node.slug) == active_slug else ""
+
+    children_html = ""
+    if children:
+        inner = "".join(_render_public_node(c, active_slug) for c in children)
+        children_html = f'<ul class="pub-tree-children">{inner}</ul>'
+
+    return (
+        f'<li class="pub-tree-node">'
+        f'<a class="pub-side-link{is_active}" href="/d/{slug}/">'
+        f"<span>{title}</span>"
+        f"</a>"
+        f"{children_html}"
+        f"</li>"
+    )
+
+
+@register.simple_tag
+def render_public_tree(tree_data: list, active_slug: str = "") -> str:
+    """渲染公开端目录树为嵌套 HTML。只列已发布文档，无任何编辑入口。"""
+    inner = "".join(_render_public_node(item, active_slug) for item in tree_data)
+    return mark_safe(f'<ul class="pub-tree-root">{inner}</ul>')

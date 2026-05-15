@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DESIGN.md Preview</title>
+  <style>
+    :root {
+      --color-primary: #cc785c;
+      --color-primary-hover: #b86950;
+      --color-primary-pressed: #a9583e;
+      --color-primary-disabled: #e6dfd8;
+      --color-on-primary: #ffffff;
+      --color-canvas: #faf9f5;
+      --color-surface-soft: #f5f0e8;
+      --color-surface-card: #efe9de;
+      --color-surface-strong: #e8e0d2;
+      --color-surface-raised: #fffdf8;
+      --color-surface-overlay: rgba(20, 20, 19, 0.38);
+      --color-surface-dark: #181715;
+      --color-surface-dark-soft: #1f1e1b;
+      --color-surface-dark-elevated: #252320;
+      --color-hairline: #e6dfd8;
+      --color-hairline-soft: #ebe6df;
+      --color-hairline-strong: #d8cec2;
+      --color-ink: #141413;
+      --color-ink-strong: #252523;
+      --color-ink-body: #3d3d3a;
+      --color-ink-muted: #6c6a64;
+      --color-ink-subtle: #8e8b82;
+      --color-ink-on-dark: #faf9f5;
+      --color-ink-on-dark-muted: #a09d96;
+      --color-success: #4f9b65;
+      --color-success-surface: #edf5ee;
+      --color-warning: #b9832f;
+      --color-warning-surface: #fbf1df;
+      --color-danger: #c64545;
+      --color-danger-surface: #fbebea;
+      --color-focus-ring: rgba(204, 120, 92, 0.28);
+      --color-link-hover-fill: rgba(204, 120, 92, 0.08);
+      --color-selection: rgba(204, 120, 92, 0.18);
+      --font-display: "Tiempos Headline", "Cormorant Garamond", "Noto Serif SC", Georgia, serif;
+      --font-body: Inter, "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", "SF Mono", Consolas, ui-monospace, monospace;
+      --shadow-focus: 0 0 0 3px var(--color-focus-ring);
+      --shadow-floating: 0 16px 48px rgba(20, 20, 19, 0.10);
+      --shadow-popover: 0 12px 32px rgba(20, 20, 19, 0.12);
+      --nav-height: 64px;
+      --sidebar-width: 264px;
+      --toc-width: 220px;
+      --reader-width: 760px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--nav-height) + 24px);
+    }
+
+    body {
+      margin: 0;
+      background: var(--color-canvas);
+      color: var(--color-ink-body);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.68;
+      letter-spacing: 0;
+    }
+
+    ::selection {
+      background: var(--color-selection);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 0;
+      box-shadow: var(--shadow-focus);
+    }
+
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: var(--nav-height);
+      background: rgba(250, 249, 245, 0.86);
+      border-bottom: 1px solid rgba(230, 223, 216, 0.72);
+      backdrop-filter: blur(18px);
+    }
+
+    .top-nav__inner {
+      display: grid;
+      grid-template-columns: 1fr minmax(240px, 360px) 1fr;
+      align-items: center;
+      width: min(1280px, 100%);
+      padding: 0 32px;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--color-ink);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 18px;
+      height: 18px;
+    }
+
+    .brand-mark::before,
+    .brand-mark::after,
+    .brand-mark span::before,
+    .brand-mark span::after {
+      position: absolute;
+      inset: 8px 1px auto 1px;
+      height: 2px;
+      background: var(--color-ink);
+      border-radius: 999px;
+      content: "";
+    }
+
+    .brand-mark::after {
+      transform: rotate(90deg);
+    }
+
+    .brand-mark span::before {
+      transform: rotate(45deg);
+    }
+
+    .brand-mark span::after {
+      transform: rotate(-45deg);
+    }
+
+    .search-command {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      height: 40px;
+      padding: 8px 12px;
+      color: var(--color-ink-muted);
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      border-radius: 8px;
+      transition: border-color 180ms cubic-bezier(0.4, 0, 0.2, 1), background 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .search-command:hover {
+      border-color: var(--color-hairline-strong);
+    }
+
+    .search-command span:first-child {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .keycap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 22px;
+      padding: 0 7px;
+      color: var(--color-ink-subtle);
+      background: var(--color-surface-soft);
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 18px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.2;
+      transition: background 180ms cubic-bezier(0.4, 0, 0.2, 1), color 180ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      color: var(--color-on-primary);
+      background: var(--color-primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-secondary {
+      color: var(--color-ink);
+      background: var(--color-surface-soft);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-surface-card);
+    }
+
+    .btn-ghost {
+      color: var(--color-ink);
+      background: transparent;
+      padding-inline: 12px;
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-primary);
+      background: var(--color-link-hover-fill);
+    }
+
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 999px;
+      color: var(--color-ink-muted);
+      background: transparent;
+      transition: background 180ms cubic-bezier(0.4, 0, 0.2, 1), color 180ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .icon-button:hover {
+      color: var(--color-ink);
+      background: var(--color-surface-soft);
+    }
+
+    .icon-button:active {
+      transform: scale(0.97);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--toc-width);
+      width: min(1280px, 100%);
+      min-height: calc(100vh - var(--nav-height));
+      margin: 0 auto;
+      padding: 0 32px;
+      column-gap: 48px;
+    }
+
+    .sidebar,
+    .toc {
+      position: sticky;
+      top: var(--nav-height);
+      height: calc(100vh - var(--nav-height));
+      padding-top: 32px;
+      overflow: auto;
+    }
+
+    .sidebar {
+      border-right: 1px solid rgba(230, 223, 216, 0.60);
+      padding-right: 24px;
+    }
+
+    .sidebar-section + .sidebar-section {
+      margin-top: 24px;
+    }
+
+    .side-label {
+      margin: 0 0 10px;
+      color: var(--color-ink-subtle);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    .side-link,
+    .toc-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+      padding: 8px 10px;
+      color: var(--color-ink-muted);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.45;
+      transition: background 180ms cubic-bezier(0.4, 0, 0.2, 1), color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .side-link:hover,
+    .toc-link:hover {
+      color: var(--color-ink);
+      background: var(--color-surface-soft);
+    }
+
+    .side-link.is-active {
+      color: var(--color-ink);
+      background: var(--color-surface-soft);
+    }
+
+    .status-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--color-ink-subtle);
+    }
+
+    .status-dot.is-published {
+      background: var(--color-success);
+    }
+
+    .status-dot.is-archived {
+      background: var(--color-danger);
+    }
+
+    .article {
+      width: min(var(--reader-width), 100%);
+      margin: 0 auto;
+      padding: 96px 0 120px;
+      color: var(--color-ink-body);
+      font-size: 17px;
+      line-height: 1.76;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+      margin-bottom: 24px;
+      color: var(--color-ink-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 4px 10px;
+      color: var(--color-ink-muted);
+      background: var(--color-surface-soft);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    .badge-primary {
+      color: var(--color-on-primary);
+      background: var(--color-primary);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1,
+    h2 {
+      color: var(--color-ink);
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin-bottom: 24px;
+      font-size: 44px;
+      line-height: 1.12;
+    }
+
+    h2 {
+      margin: 0 0 24px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 32px 0 12px;
+      color: var(--color-ink);
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    p {
+      margin-bottom: 18px;
+    }
+
+    .lead {
+      margin-bottom: 0;
+      color: var(--color-ink-strong);
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    .article-section {
+      padding-top: 96px;
+    }
+
+    .article-section.is-tight {
+      padding-top: 72px;
+    }
+
+    .callout {
+      margin: 32px 0;
+      padding: 20px 24px;
+      color: var(--color-ink-body);
+      background: var(--color-surface-soft);
+      border-radius: 8px;
+    }
+
+    .callout p:last-child {
+      margin-bottom: 0;
+    }
+
+    .two-up {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+
+    .soft-panel {
+      padding: 24px;
+      background: var(--color-surface-soft);
+      border-radius: 8px;
+    }
+
+    .soft-panel h3 {
+      margin-top: 0;
+    }
+
+    .code-window {
+      margin: 32px 0;
+      overflow: hidden;
+      color: var(--color-ink-on-dark);
+      background: var(--color-surface-dark);
+      border-radius: 8px;
+    }
+
+    .code-window__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 0 16px;
+      color: var(--color-ink-on-dark-muted);
+      background: var(--color-surface-dark-elevated);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .window-dots {
+      display: inline-flex;
+      gap: 7px;
+    }
+
+    .window-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--color-ink-on-dark-muted);
+      opacity: 0.62;
+    }
+
+    pre {
+      margin: 0;
+      padding: 20px 24px 24px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre;
+    }
+
+    .token-muted {
+      color: var(--color-ink-on-dark-muted);
+    }
+
+    .token-coral {
+      color: #e5a48f;
+    }
+
+    .token-green {
+      color: #8dc89b;
+    }
+
+    .form-demo {
+      display: grid;
+      gap: 14px;
+      margin: 32px 0;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      color: var(--color-ink);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .input,
+    .textarea {
+      width: 100%;
+      min-height: 40px;
+      padding: 10px 14px;
+      color: var(--color-ink);
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
+      border-radius: 8px;
+      transition: border-color 180ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .textarea {
+      min-height: 104px;
+      resize: vertical;
+    }
+
+    .input:hover,
+    .textarea:hover {
+      border-color: var(--color-hairline-strong);
+    }
+
+    .input:focus,
+    .textarea:focus {
+      outline: 0;
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-focus);
+    }
+
+    .helper {
+      margin: 0;
+      color: var(--color-ink-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .button-row,
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .toolbar {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 24px 0 0;
+      padding: 6px;
+      background: rgba(250, 249, 245, 0.92);
+      border-radius: 8px;
+      box-shadow: var(--shadow-popover);
+      backdrop-filter: blur(18px);
+    }
+
+    .toolbar button {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 10px;
+      color: var(--color-ink-muted);
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 180ms cubic-bezier(0.4, 0, 0.2, 1), color 180ms cubic-bezier(0.4, 0, 0.2, 1), transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toolbar button:hover {
+      color: var(--color-ink);
+      background: var(--color-surface-soft);
+    }
+
+    .toolbar button:active {
+      transform: scale(0.97);
+    }
+
+    .admin-preview {
+      display: grid;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .admin-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: var(--color-surface-soft);
+      border-radius: 8px;
+    }
+
+    .admin-row strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--color-ink);
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .admin-row p {
+      margin: 0;
+      color: var(--color-ink-muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .toc {
+      padding-left: 0;
+    }
+
+    .toc-title {
+      margin: 0 0 10px;
+      color: var(--color-ink-subtle);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    .toc-link {
+      min-height: 32px;
+      padding: 6px 8px;
+    }
+
+    .toc-link.is-active {
+      color: var(--color-primary);
+      background: transparent;
+    }
+
+    .search-overlay {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      z-index: 60;
+      width: min(640px, calc(100vw - 32px));
+      padding: 12px;
+      background: var(--color-canvas);
+      border-radius: 12px;
+      box-shadow: var(--shadow-floating);
+      transform: translate(-50%, -12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .search-overlay.is-open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
+    }
+
+    .overlay-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: var(--color-surface-overlay);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .overlay-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .search-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 6px 10px;
+      border-bottom: 1px solid var(--color-hairline-soft);
+    }
+
+    .search-input-row input {
+      flex: 1;
+      height: 42px;
+      color: var(--color-ink);
+      background: transparent;
+      border: 0;
+      outline: 0;
+      font-size: 16px;
+    }
+
+    .result-list {
+      display: grid;
+      gap: 4px;
+      padding-top: 10px;
+    }
+
+    .result-item {
+      display: grid;
+      gap: 3px;
+      padding: 10px;
+      color: var(--color-ink);
+      border-radius: 8px;
+    }
+
+    .result-item:hover {
+      background: var(--color-surface-soft);
+    }
+
+    .result-item small {
+      color: var(--color-ink-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 70;
+      width: min(460px, 100vw);
+      height: 100vh;
+      padding: 24px;
+      background: var(--color-canvas);
+      box-shadow: var(--shadow-floating);
+      transform: translateX(105%);
+      transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .drawer.is-open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .drawer h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.28;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .timeline-item {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--color-hairline-soft);
+    }
+
+    .timeline-item strong {
+      display: block;
+      color: var(--color-ink);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .timeline-item span {
+      color: var(--color-ink-muted);
+      font-size: 13px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 80;
+      padding: 12px 16px;
+      color: var(--color-ink-on-dark);
+      background: var(--color-surface-dark);
+      border-radius: 8px;
+      box-shadow: var(--shadow-popover);
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1099px) {
+      .top-nav__inner {
+        grid-template-columns: 1fr auto;
+      }
+
+      .search-command {
+        display: none;
+      }
+
+      .shell {
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+        column-gap: 32px;
+      }
+
+      .toc {
+        display: none;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .top-nav__inner {
+        padding: 0 20px;
+      }
+
+      .nav-actions .btn-ghost,
+      .nav-actions .btn-secondary {
+        display: none;
+      }
+
+      .shell {
+        display: block;
+        padding: 0 20px;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        padding: 18px 0 0;
+        border-right: 0;
+        overflow: visible;
+      }
+
+      .sidebar-section:not(:first-child) {
+        display: none;
+      }
+
+      .article {
+        padding: 64px 0 96px;
+        font-size: 16px;
+        line-height: 1.68;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      h2 {
+        font-size: 26px;
+      }
+
+      .article-section {
+        padding-top: 64px;
+      }
+
+      .two-up,
+      .admin-row {
+        grid-template-columns: 1fr;
+      }
+
+      .drawer {
+        padding: 20px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-nav">
+    <div class="top-nav__inner">
+      <a class="brand" href="#intro" aria-label="回到页面顶部">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>Docsite Preview</span>
+      </a>
+      <button class="search-command" type="button" data-open-search>
+        <span>搜索文档、版本或操作</span>
+        <span class="keycap">⌘K</span>
+      </button>
+      <nav class="nav-actions" aria-label="页面操作">
+        <a class="btn btn-ghost" href="#admin">后台样例</a>
+        <button class="btn btn-secondary" type="button" data-open-drawer>版本</button>
+        <button class="btn btn-primary" type="button" data-toast>发布</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar" aria-label="文档目录">
+      <div class="sidebar-section">
+        <p class="side-label">当前空间</p>
+        <a class="side-link is-active" href="#intro">
+          <span class="status-dot is-published" aria-hidden="true"></span>
+          <span>AI 文档承载页</span>
+        </a>
+        <a class="side-link" href="#components">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>组件规范草稿</span>
+        </a>
+        <a class="side-link" href="#admin">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>编辑后台流程</span>
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <p class="side-label">状态筛选</p>
+        <a class="side-link" href="#publish">
+          <span class="status-dot is-published" aria-hidden="true"></span>
+          <span>已发布</span>
+        </a>
+        <a class="side-link" href="#editor">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>草稿</span>
+        </a>
+        <a class="side-link" href="#archive">
+          <span class="status-dot is-archived" aria-hidden="true"></span>
+          <span>已归档</span>
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <button class="btn btn-primary" type="button" data-toast>新建文档</button>
+      </div>
+    </aside>
+
+    <main class="article">
+      <article>
+        <section id="intro">
+          <div class="meta-row">
+            <span class="badge badge-primary">Published</span>
+            <span>最后更新 2026-05-14</span>
+            <span>Version alpha</span>
+          </div>
+          <h1>让 AI 生成文档像被认真编辑过一样呈现</h1>
+          <p class="lead">这是基于新版 DESIGN.md 做的实例页面。它使用 Claude 式暖白底、珊瑚色主行动按钮、宽松 section rhythm 和少量功能性线条, 让读者关注文档本身。</p>
+        </section>
+
+        <section class="article-section" id="principles">
+          <h2>阅读页的基本气质</h2>
+          <p>公开访客通过链接直接抵达某篇文档, 页面不展示系统存在感。没有登录入口、没有编辑入口、没有进度条, 只有标题、正文、必要的 meta 信息和足够安静的阅读空间。</p>
+          <p>层次不靠一层一层的白卡片。浅奶油色块只在内容确实需要成组识别时出现, 线条只用于输入框、表格行、侧栏边界这类功能性场景。</p>
+          <div class="callout">
+            <p><strong>设计提示:</strong> 这个 callout 没有左侧装饰线, 也没有阴影。它只比背景深一档, 用来承载提示而不是抢走正文注意力。</p>
+          </div>
+        </section>
+
+        <section class="article-section" id="components">
+          <h2>组件与内容块</h2>
+          <p>按钮和输入框都保持 40px 基准高度、8px 圆角和克制的状态变化。主行动色只使用珊瑚色, 次级操作沉到浅奶油背景里。</p>
+          <div class="two-up">
+            <div class="soft-panel">
+              <h3>行动按钮</h3>
+              <p class="helper">主按钮用于保存、发布、新建和确认。次按钮只负责取消、返回和辅助动作。</p>
+              <div class="button-row">
+                <button class="btn btn-primary" type="button" data-toast>保存</button>
+                <button class="btn btn-secondary" type="button">取消</button>
+                <button class="btn btn-ghost" type="button">查看历史</button>
+              </div>
+            </div>
+            <div class="soft-panel">
+              <h3>状态语言</h3>
+              <p class="helper">状态点保留最小可见度, 不把后台变成彩色仪表盘。</p>
+              <div class="badge-row">
+                <span class="badge badge-primary">Ready</span>
+                <span class="badge">Draft</span>
+                <span class="badge">Internal</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-window" aria-label="暗色代码块示例">
+            <div class="code-window__bar">
+              <span class="window-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span>ai-docsite/publish.ts</span>
+            </div>
+            <pre><code><span class="token-muted">const</span> publish = <span class="token-coral">await</span> docs.release({
+  slug: <span class="token-green">"ai-generated-report"</span>,
+  visibility: <span class="token-green">"public-link"</span>,
+  theme: <span class="token-green">"claude-warm-canvas"</span>
+});
+
+console.log(publish.url);</code></pre>
+          </div>
+        </section>
+
+        <section class="article-section is-tight" id="editor">
+          <h2>编辑状态</h2>
+          <p>团队编辑需要的是可信赖的工作环境, 而不是一个自由度过高的块编辑器。编辑器可以修改内容, 但不能随意改变字体、字号或颜色。</p>
+          <form class="form-demo">
+            <div class="field">
+              <label for="title">文档标题</label>
+              <input class="input" id="title" value="AI 生成文档发布说明">
+            </div>
+            <div class="field">
+              <label for="summary">发布摘要</label>
+              <textarea class="textarea" id="summary">本次发布补充了正文结构、版本记录和公开链接说明。</textarea>
+              <p class="helper">焦点态使用珊瑚色边框和 3px focus ring。</p>
+            </div>
+          </form>
+          <div class="toolbar" aria-label="编辑器工具栏">
+            <button type="button" aria-label="加粗">B</button>
+            <button type="button" aria-label="斜体"><em>I</em></button>
+            <button type="button" aria-label="链接">Link</button>
+            <button type="button" aria-label="撤销">Undo</button>
+            <button type="button" aria-label="保存" data-toast>保存</button>
+          </div>
+        </section>
+
+        <section class="article-section" id="admin">
+          <h2>后台工作台</h2>
+          <p>后台采用文档工具的结构: 左侧目录, 中央编辑和预览, 右侧版本与发布信息。面板使用浅奶油色块, 不给每个区域套硬边框。</p>
+          <div class="admin-preview">
+            <div class="admin-row">
+              <div>
+                <strong>公开链接已开启</strong>
+                <p>访客可以通过 `/d/ai-generated-report` 直接阅读, 不需要登录。</p>
+              </div>
+              <button class="btn btn-secondary" type="button" data-open-drawer>查看版本</button>
+            </div>
+            <div class="admin-row">
+              <div>
+                <strong>存在 2 处未发布改动</strong>
+                <p>标题和摘要已保存为草稿, 发布后会替换当前公开版本。</p>
+              </div>
+              <button class="btn btn-primary" type="button" data-toast>发布改动</button>
+            </div>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <aside class="toc" aria-label="页内目录">
+      <p class="toc-title">On this page</p>
+      <a class="toc-link is-active" href="#intro">概览</a>
+      <a class="toc-link" href="#principles">阅读页气质</a>
+      <a class="toc-link" href="#components">组件与内容块</a>
+      <a class="toc-link" href="#editor">编辑状态</a>
+      <a class="toc-link" href="#admin">后台工作台</a>
+    </aside>
+  </div>
+
+  <div class="overlay-backdrop" data-backdrop></div>
+
+  <section class="search-overlay" aria-label="全局搜索" aria-hidden="true" data-search-overlay>
+    <div class="search-input-row">
+      <span aria-hidden="true">Search</span>
+      <input type="search" placeholder="搜索文档、版本、发布操作" data-search-input>
+      <span class="keycap">Esc</span>
+    </div>
+    <div class="result-list">
+      <a class="result-item" href="#principles">
+        <strong>阅读页的基本气质</strong>
+        <small>公开页面、暖白底、少线条、内容优先</small>
+      </a>
+      <a class="result-item" href="#editor">
+        <strong>编辑状态</strong>
+        <small>输入框、focus ring、编辑器工具栏</small>
+      </a>
+      <a class="result-item" href="#admin">
+        <strong>后台工作台</strong>
+        <small>发布状态、版本历史、团队编辑流程</small>
+      </a>
+    </div>
+  </section>
+
+  <aside class="drawer" aria-label="版本历史" aria-hidden="true" data-drawer>
+    <div class="drawer-header">
+      <h2>版本历史</h2>
+      <button class="icon-button" type="button" aria-label="关闭版本历史" data-close-drawer>×</button>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <strong>v0.4 已发布</strong>
+        <span>2026-05-14 16:32 · 调整为 Claude 暖白视觉系统</span>
+      </div>
+      <div class="timeline-item">
+        <strong>v0.3 草稿</strong>
+        <span>2026-05-14 15:48 · 补充 Apple 式跳转与 sticky action</span>
+      </div>
+      <div class="timeline-item">
+        <strong>v0.2 已归档</strong>
+        <span>2026-05-13 21:10 · 旧版绿金出版物系统</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="toast" role="status" aria-live="polite" data-toast-box>已保存 · 14:32</div>
+
+  <script>
+    const backdrop = document.querySelector("[data-backdrop]");
+    const searchOverlay = document.querySelector("[data-search-overlay]");
+    const searchInput = document.querySelector("[data-search-input]");
+    const drawer = document.querySelector("[data-drawer]");
+    const toast = document.querySelector("[data-toast-box]");
+    const tocLinks = Array.from(document.querySelectorAll(".toc-link"));
+    const sections = tocLinks
+      .map((link) => document.querySelector(link.getAttribute("href")))
+      .filter(Boolean);
+    let toastTimer;
+
+    function openSearch() {
+      backdrop.classList.add("is-open");
+      searchOverlay.classList.add("is-open");
+      searchOverlay.setAttribute("aria-hidden", "false");
+      window.setTimeout(() => searchInput.focus(), 80);
+    }
+
+    function closeSearch() {
+      searchOverlay.classList.remove("is-open");
+      searchOverlay.setAttribute("aria-hidden", "true");
+      if (!drawer.classList.contains("is-open")) {
+        backdrop.classList.remove("is-open");
+      }
+    }
+
+    function openDrawer() {
+      backdrop.classList.add("is-open");
+      drawer.classList.add("is-open");
+      drawer.setAttribute("aria-hidden", "false");
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("aria-hidden", "true");
+      if (!searchOverlay.classList.contains("is-open")) {
+        backdrop.classList.remove("is-open");
+      }
+    }
+
+    function showToast(message = "已保存 · 14:32") {
+      toast.textContent = message;
+      toast.classList.add("is-visible");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 2400);
+    }
+
+    document.querySelectorAll("[data-open-search]").forEach((button) => {
+      button.addEventListener("click", openSearch);
+    });
+
+    document.querySelectorAll("[data-open-drawer]").forEach((button) => {
+      button.addEventListener("click", openDrawer);
+    });
+
+    document.querySelectorAll("[data-close-drawer]").forEach((button) => {
+      button.addEventListener("click", closeDrawer);
+    });
+
+    document.querySelectorAll("[data-toast]").forEach((button) => {
+      button.addEventListener("click", () => showToast("已保存 · " + new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })));
+    });
+
+    backdrop.addEventListener("click", () => {
+      closeSearch();
+      closeDrawer();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const isSearchShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+      if (isSearchShortcut) {
+        event.preventDefault();
+        openSearch();
+      }
+      if (event.key === "Escape") {
+        closeSearch();
+        closeDrawer();
+      }
+    });
+
+    document.querySelectorAll(".result-item").forEach((item) => {
+      item.addEventListener("click", closeSearch);
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      tocLinks.forEach((link) => {
+        link.classList.toggle("is-active", link.getAttribute("href") === "#" + visible.target.id);
+      });
+    }, {
+      rootMargin: "-24% 0px -62% 0px",
+      threshold: [0.1, 0.3, 0.6]
+    });
+
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>

@@ -1,54 +1,94 @@
 {% extends "base_public.html" %}
-{% load static %}
+{% load static doc_tree %}
 
 {% block title %}{{ document.title }} — Docsite{% endblock %}
 
+{% block nav_actions %}
+  <button type="button" class="pub-btn pub-btn--ghost" id="btn-pub-versions"
+          aria-haspopup="dialog">版本</button>
+  {% if user.is_authenticated %}
+    <a class="pub-btn pub-btn--secondary" href="{% url 'admin_doc_detail' document.pk %}">编辑</a>
+    {% if document.status != 'published' %}
+      <a class="pub-btn pub-btn--primary" href="{% url 'admin_doc_detail' document.pk %}#publish">发布</a>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
 {% block body %}
-<div class="doc-shell">
+<div class="pub-shell">
 
-  <div class="doc-content">
-    <header class="doc-header">
-      <h1>{{ document.title }}</h1>
-    </header>
+  <aside class="pub-sidebar" aria-label="文档目录">
+    <p class="pub-side-label">文档目录</p>
+    {% if tree_data %}
+      {% render_public_tree tree_data document.slug %}
+    {% else %}
+      <p class="pub-side-empty">还没有已发布的文档。</p>
+    {% endif %}
+  </aside>
 
-    <div class="doc-body">
-      {{ content_html|safe }}
-    </div>
+  <main class="pub-main">
+    <article class="pub-article">
 
-    <div class="doc-footer">
-      最后更新于 {{ document.updated_at|date:"Y-m-d" }}
-    </div>
-  </div>
+      <header class="pub-doc-header" id="doc-top">
+        <p class="pub-eyebrow">
+          {% if document.published_at %}
+            发布于 {{ document.published_at|date:"Y-m-d" }}
+          {% else %}
+            更新于 {{ document.updated_at|date:"Y-m-d" }}
+          {% endif %}
+        </p>
+        <h1 class="pub-display">{{ document.title }}</h1>
+      </header>
 
-  <aside class="doc-toc" aria-label="页内目录">
-    <p class="doc-toc-title">目录</p>
-    <p class="doc-toc-placeholder">目录生成将在后续阶段实现</p>
+      {% if content_html %}
+        <div class="pub-doc-body">
+          {# safe: content_html 已经 bleach 清洗（apps/editor/sanitizer.py）并由 extract_toc 处理过 #}
+          {{ content_html|safe }}
+        </div>
+      {% else %}
+        <p class="pub-empty-hint">该文档尚无内容。</p>
+      {% endif %}
+
+      <footer class="pub-doc-footer">
+        最后更新于 {{ document.updated_at|date:"Y-m-d" }}
+      </footer>
+
+    </article>
+  </main>
+
+  <aside class="pub-toc" aria-label="页内目录">
+    <p class="pub-toc-title">On this page</p>
+    <nav>
+      {% if toc_items %}
+        {% for item in toc_items %}
+          <a class="pub-toc-link pub-toc-link--lvl{{ item.level }}"
+             data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
+        {% endfor %}
+      {% else %}
+        <p class="pub-toc-empty">本文暂无小节</p>
+      {% endif %}
+    </nav>
   </aside>
 
 </div>
 
-<script>
-  (function () {
-    document.querySelectorAll('.doc-body .doc-section').forEach((el) => {
-      el.classList.add('fade-up');
-    });
+<!-- 版本抽屉（占位，后续阶段接入真实数据） -->
+<div class="pub-drawer-scrim" id="pub-versions-scrim" hidden></div>
+<aside class="pub-drawer" id="pub-versions-drawer" aria-label="版本历史" hidden>
+  <div class="pub-drawer-head">
+    <h2>版本历史</h2>
+    <button type="button" class="pub-drawer-close" id="btn-pub-versions-close" aria-label="关闭">×</button>
+  </div>
+  <div class="pub-drawer-body">
+    <p class="pub-drawer-hint">公开端版本浏览将在后续阶段接入。当前仅显示文档的最近一次发布信息。</p>
+    <div class="pub-drawer-item">
+      <strong>{{ document.title }}</strong>
+      <span>{% if document.published_at %}{{ document.published_at|date:"Y-m-d H:i" }}{% else %}{{ document.updated_at|date:"Y-m-d H:i" }}{% endif %}</span>
+    </div>
+  </div>
+</aside>
+{% endblock %}
 
-    const targets = document.querySelectorAll('.fade-up');
-    if (!targets.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.08, rootMargin: '0px 0px -32px 0px' }
-    );
-
-    targets.forEach((el) => observer.observe(el));
-  })();
-</script>
+{% block extra_js %}
+<script src="{% static 'js/public_shell.js' %}" defer></script>
 {% endblock %}

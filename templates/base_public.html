@@ -14,12 +14,22 @@
 </head>
 <body>
 
-  <nav class="pub-nav" aria-label="主导航">
-    <a href="/" class="pub-nav-brand">Docsite</a>
-  </nav>
+  <header class="pub-topnav" aria-label="主导航">
+    <div class="pub-topnav-inner">
+      <a href="/" class="pub-brand">
+        <span class="pub-brand-mark" aria-hidden="true"></span>
+        <span>Docsite</span>
+      </a>
+      <div class="pub-topnav-spacer"></div>
+      <nav class="pub-nav-actions" aria-label="页面操作">
+        {% block nav_actions %}{% endblock %}
+      </nav>
+    </div>
+  </header>
 
   {% block body %}{% endblock %}
 
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

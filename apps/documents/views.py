@@ -9,7 +9,7 @@ from django.views.generic import DetailView
 
 from .fts import search_documents
 from .models import Document, DocumentVersion, SlugAlias
-from .utils import build_nested_tree
+from .utils import build_nested_tree, build_published_tree, extract_toc
 
 
 class DocumentDetailView(DetailView):
@@ -45,8 +45,12 @@ class DocumentDetailView(DetailView):
             doc.versions.filter(is_auto=False).first()  # ty: ignore[unresolved-attribute]
             or doc.versions.first()  # ty: ignore[unresolved-attribute]
         )
+        raw_html: str = str(version.html) if version else ""
+        content_html, toc_items = extract_toc(raw_html)
         ctx["version"] = version
-        ctx["content_html"] = version.html if version else ""
+        ctx["content_html"] = content_html
+        ctx["toc_items"] = toc_items
+        ctx["tree_data"] = build_published_tree()
         return ctx
 
 

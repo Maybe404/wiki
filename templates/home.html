@@ -1,13 +1,100 @@
-{% extends "base.html" %}
+{% extends "base_public.html" %}
+{% load static doc_tree %}
 
-{% block title %}Docsite{% endblock %}
+{% block title %}Docsite — 内部文档库{% endblock %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="/static/css/main.css">
+{% block nav_actions %}
+  {% if user.is_authenticated %}
+    <a class="pub-btn pub-btn--primary" href="{% url 'admin_dashboard' %}">进入后台</a>
+  {% endif %}
 {% endblock %}
 
 {% block body %}
-<main class="page-center">
-  <h1>Hello</h1>
-</main>
+<div class="pub-shell">
+
+  <aside class="pub-sidebar" aria-label="文档目录">
+    <p class="pub-side-label">文档目录</p>
+    {% if tree_data %}
+      {% render_public_tree tree_data "" %}
+    {% else %}
+      <p class="pub-side-empty">还没有已发布的文档。</p>
+    {% endif %}
+  </aside>
+
+  <main class="pub-main">
+    <article class="pub-article pub-article--home">
+
+      <section id="intro" class="pub-section pub-section--hero">
+        <p class="pub-eyebrow">Internal Docs</p>
+        <h1 class="pub-display">认真做的文档，值得被认真读。</h1>
+        <p class="pub-lead">
+          这里收录团队公开发布的所有内部文档，包括产品、设计、技术与流程规范。
+          无须登录即可阅读，链接稳定可分享。
+        </p>
+      </section>
+
+      {% if recent %}
+      <section id="recent" class="pub-section">
+        <header class="pub-section-head">
+          <h2>最近发布</h2>
+          <span class="pub-section-meta">共 {{ total_count }} 篇</span>
+        </header>
+        <ul class="pub-doc-list">
+          {% for doc in recent %}
+            <li class="pub-doc-item">
+              <a class="pub-doc-link" href="/d/{{ doc.slug }}/">
+                <span class="pub-doc-title">{{ doc.title }}</span>
+                <span class="pub-doc-meta">
+                  {% if doc.published_at %}
+                    发布于 {{ doc.published_at|date:"Y-m-d" }}
+                  {% else %}
+                    更新于 {{ doc.updated_at|date:"Y-m-d" }}
+                  {% endif %}
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <section id="all" class="pub-section">
+        <header class="pub-section-head">
+          <h2>全部文档</h2>
+        </header>
+        {% if all_published %}
+        <ul class="pub-doc-list pub-doc-list--dense">
+          {% for doc in all_published %}
+            <li class="pub-doc-item">
+              <a class="pub-doc-link" href="/d/{{ doc.slug }}/">
+                <span class="pub-doc-title">{{ doc.title }}</span>
+                <span class="pub-doc-meta">
+                  {{ doc.updated_at|date:"Y-m-d" }}
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+          <p class="pub-empty-hint">还没有任何已发布的文档。</p>
+        {% endif %}
+      </section>
+
+    </article>
+  </main>
+
+  <aside class="pub-toc" aria-label="页内目录">
+    <p class="pub-toc-title">On this page</p>
+    <nav>
+      {% for item in toc_items %}
+        <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
+      {% endfor %}
+    </nav>
+  </aside>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/public_shell.js' %}" defer></script>
 {% endblock %}
