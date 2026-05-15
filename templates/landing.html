@@ -1,0 +1,174 @@
+{% extends "base_public.html" %}
+{% load static %}
+
+{% block title %}Docsite — 让团队文档值得被认真读{% endblock %}
+
+{% block nav_actions %}
+  {% if user.is_authenticated %}
+    <a class="pub-btn pub-btn--primary" href="{% url 'admin_dashboard' %}">进入后台</a>
+  {% else %}
+    <a class="pub-btn pub-btn--secondary" href="{% url 'login' %}">登录</a>
+  {% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="pub-landing">
+
+  <main class="pub-main">
+    <article class="pub-article pub-article--landing">
+
+      <section id="intro" class="pub-section pub-section--hero">
+        <span class="pub-badge pub-badge--primary">Internal Docs · v1</span>
+        <h1 class="pub-display">让团队文档<br>值得被认真读。</h1>
+        <p class="pub-lead">
+          一个内部 HTML 文档管理系统：把 AI 生成的内容、规范、流程、调研收进同一处，
+          以排版讲究、可被认真阅读的方式呈现 — 而不是又一堆塞满 Markdown 的 README。
+        </p>
+        <div class="pub-cta-row">
+          <a class="pub-btn pub-btn--primary" href="{% url 'docs_index' %}">浏览全部文档</a>
+          <button type="button" class="pub-btn pub-btn--secondary" data-open-search>试试搜索</button>
+        </div>
+      </section>
+
+      <section id="why-html" class="pub-section">
+        <header class="pub-section-head">
+          <h2>为什么不是 Markdown</h2>
+          <span class="pub-section-meta">HTML 优先</span>
+        </header>
+        <p>
+          Markdown 适合写，不适合读。它把所有文档压成同一种"等宽语气"，
+          层级靠井号，结构靠空行 — 一旦内容超出"标题 + 段落 + 列表"，
+          MD 就开始用更多语法补丁去模拟它本不擅长的事情。HTML 不需要模拟。
+        </p>
+        <div class="pub-two-up">
+          <div class="pub-soft-panel pub-panel--bad">
+            <p class="pub-panel-label">Markdown 的天花板</p>
+            <ul class="pub-bullets">
+              <li>版式被渲染器决定，作者无法控制留白与节奏</li>
+              <li>表格只能"画框格"，无法做对比、卡片、状态徽章</li>
+              <li>callout/警告/步骤条要靠各家方言扩展</li>
+              <li>图与文不能并排，长正文只剩竖向阅读</li>
+              <li>代码高亮之外，几乎没有视觉表达</li>
+            </ul>
+          </div>
+          <div class="pub-soft-panel pub-panel--good">
+            <p class="pub-panel-label">HTML 给的余量</p>
+            <ul class="pub-bullets">
+              <li>语义标签清晰：section / aside / figure / details</li>
+              <li>排版交给设计系统：字体、节奏、留白可控</li>
+              <li>组件化展示：callout、对比、步骤、徽章、表格、代码窗</li>
+              <li>响应式与可访问性原生支持</li>
+              <li>同一份内容能在文档站、邮件、PDF 里复用</li>
+            </ul>
+          </div>
+        </div>
+        <div class="pub-callout">
+          <p><strong>设计取舍：</strong>编辑器允许任意结构的 HTML，由白名单清洗后存档 — 不限定模板，但保证安全与一致的视觉语言。</p>
+        </div>
+      </section>
+
+      <section id="showcase" class="pub-section">
+        <header class="pub-section-head">
+          <h2>HTML 能呈现什么</h2>
+          <span class="pub-section-meta">下面的每一块都是真实组件</span>
+        </header>
+        <p>这一节本身就是一份样例：它没有引入图片，只用排版与组件就讲清楚了"为什么 HTML 更能承载知识"。</p>
+
+        <h3>① 暗色代码窗</h3>
+        <div class="pub-code-window">
+          <div class="pub-code-bar">
+            <span class="pub-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span>docsite/publish.ts</span>
+          </div>
+<pre><code><span class="tok-muted">const</span> doc = <span class="tok-coral">await</span> docs.publish({
+  slug: <span class="tok-green">"ai-weekly-report"</span>,
+  visibility: <span class="tok-green">"public-link"</span>,
+  theme: <span class="tok-green">"claude-warm-canvas"</span>
+});
+
+console.log(doc.url);</code></pre>
+        </div>
+
+        <h3>② 状态语言与徽章</h3>
+        <div class="pub-badge-row">
+          <span class="pub-badge pub-badge--primary">Published</span>
+          <span class="pub-badge">Draft</span>
+          <span class="pub-badge">Internal</span>
+          <span class="pub-badge pub-badge--success">Ready</span>
+          <span class="pub-badge pub-badge--warning">Review</span>
+        </div>
+
+        <h3>③ 步骤条</h3>
+        <ol class="pub-steps">
+          <li class="pub-step"><span class="pub-step-num">1</span><div><strong>录入</strong><p>从 AI 生成或外部 HTML 导入，自动清洗。</p></div></li>
+          <li class="pub-step"><span class="pub-step-num">2</span><div><strong>编辑</strong><p>所见即所得，结构自由，禁用内联样式以保持一致。</p></div></li>
+          <li class="pub-step"><span class="pub-step-num">3</span><div><strong>发布</strong><p>一键生成公开链接，未登录也能稳定访问。</p></div></li>
+        </ol>
+
+        <h3>④ 对比表</h3>
+        <table class="pub-table">
+          <thead><tr><th>能力</th><th>Markdown</th><th>HTML (本系统)</th></tr></thead>
+          <tbody>
+            <tr><td>版式控制</td><td>取决于渲染器</td><td>由设计系统统一</td></tr>
+            <tr><td>callout / 警告块</td><td>各家方言不兼容</td><td>原生组件，样式一致</td></tr>
+            <tr><td>对比两栏</td><td>需要 hack 表格</td><td>语义清晰</td></tr>
+            <tr><td>状态徽章</td><td>没有</td><td>有</td></tr>
+            <tr><td>代码块</td><td>有</td><td>有 + 文件名条 + 暗色窗</td></tr>
+            <tr><td>响应式</td><td>取决于站点</td><td>原生</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="workflow" class="pub-section">
+        <header class="pub-section-head">
+          <h2>团队工作流</h2>
+          <span class="pub-section-meta">编辑 · 版本 · 发布</span>
+        </header>
+        <div class="pub-admin-row">
+          <div>
+            <strong>公开链接</strong>
+            <p>每篇已发布文档拥有稳定 <code>/d/&lt;slug&gt;/</code>，访客无需登录即可阅读。</p>
+          </div>
+          <a class="pub-btn pub-btn--secondary" href="{% url 'docs_index' %}">查看示例</a>
+        </div>
+        <div class="pub-admin-row">
+          <div>
+            <strong>版本与回滚</strong>
+            <p>每次保存写入版本表，可对比差异、回滚到任意历史版本。</p>
+          </div>
+          <span class="pub-badge">系统能力</span>
+        </div>
+        <div class="pub-admin-row">
+          <div>
+            <strong>权限与软删</strong>
+            <p>编辑需登录；删除走软删除（is_deleted），不直接 DELETE，避免误操作。</p>
+          </div>
+          <span class="pub-badge">安全默认</span>
+        </div>
+      </section>
+
+      <section id="start" class="pub-section">
+        <header class="pub-section-head">
+          <h2>开始阅读</h2>
+        </header>
+        <p>从最近发布的文档开始，或浏览全部目录。</p>
+        <div class="pub-cta-row">
+          <a class="pub-btn pub-btn--primary" href="{% url 'docs_index' %}">浏览全部文档</a>
+          <button type="button" class="pub-btn pub-btn--ghost" data-open-search>⌘K 搜索</button>
+        </div>
+      </section>
+
+    </article>
+  </main>
+
+  <aside class="pub-toc" aria-label="页内目录">
+    <p class="pub-toc-title">On this page</p>
+    <nav>
+      {% for item in toc_items %}
+        <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
+      {% endfor %}
+    </nav>
+  </aside>
+
+</div>
+{% endblock %}

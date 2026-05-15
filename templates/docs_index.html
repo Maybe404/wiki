@@ -1,7 +1,7 @@
 {% extends "base_public.html" %}
-{% load static doc_tree %}
+{% load doc_tree %}
 
-{% block title %}Docsite — 内部文档库{% endblock %}
+{% block title %}文档库 — Docsite{% endblock %}
 
 {% block nav_actions %}
   {% if user.is_authenticated %}
@@ -24,13 +24,10 @@
   <main class="pub-main">
     <article class="pub-article pub-article--home">
 
-      <section id="intro" class="pub-section pub-section--hero">
-        <p class="pub-eyebrow">Internal Docs</p>
-        <h1 class="pub-display">认真做的文档，值得被认真读。</h1>
-        <p class="pub-lead">
-          这里收录团队公开发布的所有内部文档，包括产品、设计、技术与流程规范。
-          无须登录即可阅读，链接稳定可分享。
-        </p>
+      <section id="hero" class="pub-section pub-section--hero">
+        <p class="pub-eyebrow">文档库</p>
+        <h1 class="pub-display">全部已发布文档</h1>
+        <p class="pub-lead">按时间排序的全部公开文档。左侧目录树展开按类别浏览，右侧是本页导航。</p>
       </section>
 
       {% if recent %}
@@ -93,8 +90,4 @@
   </aside>
 
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/public_shell.js' %}" defer></script>
 {% endblock %}

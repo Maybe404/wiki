@@ -15,13 +15,23 @@
 <body>
 
   <header class="pub-topnav" aria-label="主导航">
-    <div class="pub-topnav-inner">
+    <div class="pub-topnav-inner pub-topnav-inner--with-search">
       <a href="/" class="pub-brand">
         <span class="pub-brand-mark" aria-hidden="true"></span>
         <span>Docsite</span>
       </a>
-      <div class="pub-topnav-spacer"></div>
+
+      <button type="button" class="pub-search-trigger" id="pub-search-trigger" aria-label="搜索文档（⌘K）">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="4.5"/>
+          <line x1="10" y1="10" x2="14" y2="14"/>
+        </svg>
+        <span>搜索文档</span>
+        <kbd class="pub-kbd">⌘K</kbd>
+      </button>
+
       <nav class="pub-nav-actions" aria-label="页面操作">
+        <a class="pub-btn pub-btn--ghost" href="{% url 'docs_index' %}">浏览文档</a>
         {% block nav_actions %}{% endblock %}
       </nav>
     </div>
@@ -29,7 +39,26 @@
 
   {% block body %}{% endblock %}
 
+  <!-- ===== 公开搜索 overlay ===== -->
+  <div class="pub-search-overlay" id="pub-search-overlay" hidden role="dialog" aria-label="搜索文档">
+    <div class="pub-search-backdrop" data-close></div>
+    <div class="pub-search-modal" role="document">
+      <div class="pub-search-input-row">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="4.5"/>
+          <line x1="10" y1="10" x2="14" y2="14"/>
+        </svg>
+        <input type="search" id="pub-search-input" placeholder="搜索文档标题或正文…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+        <kbd class="pub-kbd">Esc</kbd>
+      </div>
+      <div class="pub-search-body" id="pub-search-body">
+        <p class="pub-search-hint" id="pub-search-hint">输入关键词搜索文档 · 按 Esc 关闭</p>
+      </div>
+    </div>
+  </div>
+
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <script src="{% static 'js/public_shell.js' %}" defer></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -135,7 +135,13 @@
         <line x1="2" y1="13.5" x2="16" y2="13.5"/>
       </svg>
     </button>
-    <span class="admin-topbar-brand">Docsite 管理</span>
+    <a href="/" class="admin-topbar-brand" title="返回首页">Docsite 管理</a>
+    <a href="/" class="admin-topbar-home" title="查看站点" aria-label="查看站点">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 7l6-5 6 5"/>
+        <path d="M3.5 6.5V13h9V6.5"/>
+      </svg>
+    </a>
   </header>
 
   <div class="admin-layout">
@@ -179,6 +185,13 @@
           </svg>
           新文档
         </button>
+        <a href="/" class="btn-settings" title="查看站点首页" aria-label="查看站点首页">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 7l6-5 6 5"/>
+            <path d="M3.5 6.5V13h9V6.5"/>
+          </svg>
+        </a>
         <a href="{% url 'admin_import' %}" class="btn-settings" title="从 HTML 导入" aria-label="从 HTML 导入">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
                stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">

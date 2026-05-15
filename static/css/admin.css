@@ -332,7 +332,22 @@
   font-size: var(--text-body-sm);
   color: var(--color-ink-muted);
   font-weight: 400;
+  text-decoration: none;
 }
+.admin-topbar-brand:hover { color: var(--color-ink); }
+
+.admin-topbar-home {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--rounded-md);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+}
+.admin-topbar-home:hover { background: var(--color-surface-soft); color: var(--color-ink); }
 
 .btn-sidebar-toggle {
   display: flex;

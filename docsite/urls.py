@@ -7,6 +7,8 @@ handler404 = "apps.core.views.custom_404"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("docs/", views.docs_index, name="docs_index"),
+    path("search", views.public_search, name="public_search"),
     path("django-admin/", admin.site.urls),
     path("", include("apps.accounts.urls")),
     path("", include("apps.documents.urls")),
