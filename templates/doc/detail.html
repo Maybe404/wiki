@@ -40,7 +40,13 @@
         <h1 class="pub-display">{{ document.title }}</h1>
       </header>
 
-      {% if content_html %}
+      {% if is_full_page %}
+        {# 完整 HTML 页面：用沙箱 iframe 隔离样式与脚本环境 #}
+        <iframe class="pub-doc-frame"
+                sandbox=""
+                title="{{ document.title }}"
+                srcdoc="{{ content_html }}"></iframe>
+      {% elif content_html %}
         <div class="pub-doc-body">
           {# safe: content_html 已经 bleach 清洗（apps/editor/sanitizer.py）并由 extract_toc 处理过 #}
           {{ content_html|safe }}

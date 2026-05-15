@@ -34,6 +34,30 @@ def build_nested_tree(queryset) -> list[dict]:
     return result
 
 
+def folder_options_for_user(request) -> dict:
+    """登录态 admin 页面注入 folder_options（新建/导入选目录用）。"""
+    user = getattr(request, "user", None)
+    path = getattr(request, "path", "")
+    if not user or not user.is_authenticated or not path.startswith("/admin"):
+        return {"folder_options": []}
+    qs = (
+        Document.get_tree()
+        .filter(is_deleted=False, node_type=Document.NodeType.FOLDER)
+        .only("id", "title", "depth")
+    )
+    return {
+        "folder_options": [
+            {
+                "id": str(f.pk),
+                "title": f.title,
+                # MP_Node depth 是 1-based 根，转成相对缩进层级；用全角空格做视觉缩进
+                "indent": "　" * max(0, f.depth - 1),
+            }
+            for f in qs
+        ]
+    }
+
+
 def build_published_tree() -> list[dict]:
     """公开端目录树：只含已发布且未软删除的节点。
 

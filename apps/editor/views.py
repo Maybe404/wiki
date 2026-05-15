@@ -19,7 +19,13 @@ from apps.documents.models import AuditLog, Document, DocumentVersion
 from apps.documents.utils import build_nested_tree
 
 from .sanitizer import sanitize_inline
-from .validator import ValidationError, extract_title, validate_import_html
+from .validator import (
+    ValidationError,
+    extract_title,
+    is_full_page_html,
+    sanitize_full_page,
+    validate_import_html,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -392,25 +398,53 @@ def create_blank_document(request: HttpRequest) -> HttpResponse:
     return redirect("admin_doc_detail", pk=doc.pk)
 
 
+_MAX_UPLOAD_BYTES = 2_000_000  # 2 MB；超出视为非法上传
+
+
+def _read_html_payload(request: HttpRequest) -> str:
+    """优先读取上传文件内容；否则读取粘贴的 raw_html。超出尺寸返回空字符串。"""
+    upload = request.FILES.get("html_file")
+    if upload:
+        if upload.size and upload.size > _MAX_UPLOAD_BYTES:
+            return ""
+        raw = upload.read(_MAX_UPLOAD_BYTES + 1)
+        if isinstance(raw, bytes):
+            try:
+                return raw.decode("utf-8")
+            except UnicodeDecodeError:
+                return raw.decode("utf-8", errors="replace")
+        return str(raw)
+    return request.POST.get("raw_html", "").strip()
+
+
+def _clean_import_html(
+    raw_html: str,
+) -> tuple[bool, list[ValidationError], str, dict[str, str]]:
+    """整页 HTML 走 sanitize_full_page，否则走 validate_import_html。"""
+    if is_full_page_html(raw_html):
+        return True, [], sanitize_full_page(raw_html), {}
+    errors, cleaned_html, editable_blocks = validate_import_html(raw_html)
+    return False, errors, cleaned_html, editable_blocks
+
+
 @login_required
 def import_document_page(request: HttpRequest) -> HttpResponse:
     """GET /admin/import/ — 显示 AI HTML 导入页面。"""
     qs = Document.get_tree().filter(is_deleted=False)
-    tree_data = build_nested_tree(qs)
-    return render(request, "admin_ui/import.html", {"tree_data": tree_data})
+    return render(request, "admin_ui/import.html", {"tree_data": build_nested_tree(qs)})
 
 
 @login_required
 @require_POST
 def import_validate(request: HttpRequest) -> HttpResponse:
     """POST /admin/import/validate/ (HTMX) — 校验 HTML，返回错误列表或预览片段。"""
-    raw_html: str = request.POST.get("raw_html", "").strip()
+    raw_html = _read_html_payload(request)
 
     if not raw_html:
         empty_error = ValidationError(
             line=None,
-            reason="请粘贴 HTML 内容",
-            suggestion="将 AI 生成的 HTML 粘贴到文本框后再点击解析",
+            reason="请粘贴 HTML 内容或上传 HTML 文件",
+            suggestion=f"上传文件需 ≤ {_MAX_UPLOAD_BYTES // 1000} KB，或将内容粘贴到下方文本框",
         )
         return render(
             request,
@@ -419,13 +453,14 @@ def import_validate(request: HttpRequest) -> HttpResponse:
                 "errors": [empty_error],
                 "cleaned_html": "",
                 "editable_blocks": {},
-                "raw_html": raw_html,
+                "raw_html": "",
+                "is_full_page": False,
                 "suggested_title": "",
                 "suggested_slug": "",
             },
         )
 
-    errors, cleaned_html, editable_blocks = validate_import_html(raw_html)
+    full_page, errors, cleaned_html, editable_blocks = _clean_import_html(raw_html)
 
     suggested_title = ""
     suggested_slug = ""
@@ -440,7 +475,9 @@ def import_validate(request: HttpRequest) -> HttpResponse:
             "errors": errors,
             "cleaned_html": cleaned_html,
             "editable_blocks": editable_blocks,
-            "raw_html": raw_html,
+            # confirm 阶段会再过一次 sanitize，所以回填 cleaned_html 是安全且省事的
+            "raw_html": cleaned_html if not errors else raw_html,
+            "is_full_page": full_page,
             "suggested_title": suggested_title,
             "suggested_slug": suggested_slug,
         },
@@ -454,21 +491,19 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
     raw_html: str = request.POST.get("raw_html", "").strip()
     title: str = request.POST.get("title", "").strip()[:200] or "未命名文档"
     slug: str = request.POST.get("slug", "").strip()
+    parent_id: str = request.POST.get("parent_id", "").strip()
 
     if not raw_html:
         return redirect("admin_import")
 
-    # 服务端再次校验（幂等安全兜底，不信任前端）
-    errors, cleaned_html, editable_blocks = validate_import_html(raw_html)
-
+    full_page, errors, cleaned_html, editable_blocks = _clean_import_html(raw_html)
     if errors:
         qs = Document.get_tree().filter(is_deleted=False)
-        tree_data = build_nested_tree(qs)
         return render(
             request,
             "admin_ui/import.html",
             {
-                "tree_data": tree_data,
+                "tree_data": build_nested_tree(qs),
                 "page_error": "HTML 内容校验失败，请重新粘贴并解析。",
             },
         )
@@ -477,18 +512,26 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
     if not slug or Document.objects.filter(slug=slug, is_deleted=False).exists():
         slug = _generate_unique_slug(title)
 
-    doc = Document.add_root(
-        title=title,
-        slug=slug,
-        node_type=Document.NodeType.DOCUMENT,
-        status=Document.Status.DRAFT,
-        owner=request.user,  # ty: ignore[unresolved-attribute]
-    )
+    doc_kwargs = {
+        "title": title,
+        "slug": slug,
+        "node_type": Document.NodeType.DOCUMENT,
+        "status": Document.Status.DRAFT,
+        "owner": request.user,  # ty: ignore[unresolved-attribute]
+    }
+    if parent_id:
+        parent = get_object_or_404(Document, pk=parent_id, is_deleted=False)
+        if parent.node_type != Document.NodeType.FOLDER:
+            return HttpResponse("只能将文档导入到文件夹中", status=400)
+        doc = parent.add_child(**doc_kwargs)
+    else:
+        doc = Document.add_root(**doc_kwargs)
 
     DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
         document=doc,
         html=cleaned_html,
         editable_blocks=editable_blocks,
+        is_full_page=full_page,
         author=request.user,  # ty: ignore[unresolved-attribute]
         is_auto=False,
         note="从 HTML 导入",
@@ -499,12 +542,24 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
         action=AuditLog.Action.CREATE,
         target_type="document",
         target_id=str(doc.pk),
-        payload={"source": "html_import", "slug": slug, "title": title},
+        payload={
+            "source": "html_import",
+            "slug": slug,
+            "title": title,
+            "parent_id": parent_id or None,
+            "is_full_page": full_page,
+        },
     )
 
     sync_fts_plain_text(str(doc.pk), cleaned_html)
 
     username = request.user.get_username()  # ty: ignore[unresolved-attribute]
-    logger.info("Document %s created via HTML import by %s (slug=%s)", doc.pk, username, slug)
+    logger.info(
+        "Document %s created via HTML import by %s (slug=%s, full_page=%s)",
+        doc.pk,
+        username,
+        slug,
+        full_page,
+    )
 
     return redirect("admin_doc_detail", pk=doc.pk)

@@ -50,9 +50,14 @@ class DocumentDetailView(DetailView):
             or doc.versions.first()  # ty: ignore[unresolved-attribute]
         )
         raw_html: str = str(version.html) if version else ""
-        content_html, toc_items = extract_toc(raw_html)
+        is_full_page = bool(version and version.is_full_page)
+        if is_full_page:
+            content_html, toc_items = raw_html, []
+        else:
+            content_html, toc_items = extract_toc(raw_html)
         ctx["version"] = version
         ctx["content_html"] = content_html
+        ctx["is_full_page"] = is_full_page
         ctx["toc_items"] = toc_items
         ctx["tree_data"] = build_published_tree()
         return ctx
@@ -74,6 +79,7 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
         or doc.versions.first()  # type: ignore[unresolved-attribute]
     )
     content_html = version.html if version else ""
+    is_full_page = bool(version and version.is_full_page)
 
     # 侧边栏目录树
     qs = Document.get_tree().filter(is_deleted=False)
@@ -86,6 +92,7 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
             "document": doc,
             "version": version,
             "content_html": content_html,
+            "is_full_page": is_full_page,
             "tree_data": tree_data,
         },
     )

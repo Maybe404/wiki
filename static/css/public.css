@@ -167,38 +167,9 @@ body {
 }
 
 .pub-brand-mark {
-  position: relative;
-  width: 18px;
-  height: 18px;
   flex-shrink: 0;
-  border: 1.5px solid var(--color-primary);
-  border-radius: 5px;
-  background: rgba(204, 120, 92, 0.08);
-}
-.pub-brand-mark::before,
-.pub-brand-mark::after {
-  position: absolute;
-  background: var(--color-primary);
-  content: "";
-}
-.pub-brand-mark::before {
-  left: 5px;
-  top: 4px;
-  width: 7px;
-  height: 1.5px;
-  border-radius: 999px;
-  box-shadow: 0 4px 0 var(--color-primary), 0 8px 0 var(--color-primary);
-}
-.pub-brand-mark::after {
-  right: 3px;
-  top: 3px;
-  width: 5px;
-  height: 5px;
-  border-top: 1.5px solid var(--color-primary);
-  border-right: 1.5px solid var(--color-primary);
-  border-radius: 0 3px 0 0;
-  background: transparent;
-  opacity: 0.68;
+  color: var(--color-primary);
+  display: block;
 }
 
 .pub-nav-actions {
@@ -932,6 +903,15 @@ em     { font-style: italic; }
 }
 
 .pub-doc-body { font-size: var(--text-body-reading); }
+
+.pub-doc-frame {
+  width: 100%;
+  min-height: 80vh;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--rounded-md);
+  background: #fff;
+  margin: 24px 0;
+}
 
 .pub-doc-body h2 {
   font-family: var(--font-serif);

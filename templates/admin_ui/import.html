@@ -49,17 +49,26 @@
             hx-post="{% url 'admin_import_validate' %}"
             hx-target="#import-result"
             hx-swap="innerHTML"
+            hx-encoding="multipart/form-data"
             hx-indicator=".import-spinner">
         {% csrf_token %}
+
+        <div class="import-file-row">
+          <label class="import-file-label" for="import-file">上传 HTML 文件</label>
+          <input id="import-file" name="html_file" type="file" accept=".html,.htm,text/html"
+                 class="import-file-input">
+          <span class="import-file-hint">选择文件后会覆盖下方文本框内容</span>
+        </div>
+
         <div class="import-textarea-header">
           <label class="import-textarea-label" for="import-textarea">HTML 内容</label>
-          <span class="import-textarea-hint">支持完整 HTML 文档或片段</span>
+          <span class="import-textarea-hint">支持完整 HTML 文档（含 head/style）或正文片段</span>
         </div>
         <textarea
           id="import-textarea"
           name="raw_html"
           class="import-textarea"
-          placeholder="粘贴 AI 生成的 HTML 代码…"
+          placeholder="粘贴 AI 生成的 HTML 代码，或在上方选择文件…"
           spellcheck="false"
           autocomplete="off"
           aria-label="HTML 内容"

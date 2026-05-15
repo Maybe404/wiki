@@ -283,14 +283,11 @@
   border-radius: var(--rounded-md);
 }
 
-/* sidebar footer */
-.sidebar-footer {
-  padding: 7px 12px;
-  border-top: 1px solid var(--color-hairline-soft);
+/* sidebar toolbar (sits above the tree, like common file managers) */
+.sidebar-toolbar-wrap {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-hairline-soft);
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
 }
 
 .sidebar-toolbar {
@@ -298,6 +295,25 @@
   align-items: center;
   gap: 4px;
   width: 100%;
+}
+
+/* sidebar home link (return to public site) */
+.sidebar-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin: 0 0 10px;
+  border-radius: var(--rounded-md);
+  font-size: var(--text-meta);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition: color 150ms, background 150ms;
+}
+
+.sidebar-home:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-soft);
 }
 
 .sidebar-tool-btn {
@@ -947,6 +963,34 @@
   flex: 1;
   overflow-y: auto;
   padding: 48px;
+}
+
+/* Full-page HTML rendering (iframe-isolated) */
+.doc-fullpage-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.doc-fullpage-hint {
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-muted);
+  padding: 10px 14px;
+  background: var(--color-surface-soft);
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--color-hairline-soft);
+}
+
+.doc-fullpage-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 70vh;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--rounded-md);
+  background: #fff;
 }
 
 .doc-content {
@@ -1703,6 +1747,35 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.import-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  background: var(--color-surface-soft);
+  border: 1px dashed var(--color-hairline);
+  border-radius: var(--rounded-md);
+  flex-wrap: wrap;
+}
+
+.import-file-label {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--color-ink-body);
+}
+
+.import-file-input {
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-muted);
+}
+
+.import-file-hint {
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+  margin-left: auto;
 }
 
 .import-textarea-header {

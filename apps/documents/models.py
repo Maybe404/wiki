@@ -67,6 +67,11 @@ class DocumentVersion(models.Model):
     )
     html = models.TextField(verbose_name="HTML 内容")
     editable_blocks = models.JSONField(default=dict, verbose_name="可编辑区块")
+    is_full_page = models.BooleanField(
+        default=False,
+        verbose_name="完整 HTML 页面",
+        help_text="整页 HTML（含 head/style），用 iframe 渲染，不支持行内编辑。",
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.PROTECT,

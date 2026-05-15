@@ -112,6 +112,62 @@ def _get_line(tag: Tag) -> int | None:
     return int(v) if v is not None else None
 
 
+def is_full_page_html(raw_html: str) -> bool:
+    """判断输入是否为整页 HTML（开头是 <!doctype> 或 <html>）。"""
+    head = raw_html.lstrip().lower()
+    return head.startswith("<!doctype") or head.startswith("<html")
+
+
+# ── 完整页面清洗 ──────────────────────────────────────────────────────────────
+
+# 始终移除：会执行脚本、改基址、引外部资源、自动跳转的标签
+FULL_PAGE_REMOVED_TAGS = (
+    "script",
+    "iframe",
+    "object",
+    "embed",
+    "base",
+    "form",
+)
+FULL_PAGE_DANGEROUS_ATTRS = ("srcdoc", "formaction")
+# 所有可能装载 URL 的属性：xlink:href 用于 SVG <a>
+_URL_ATTRS = ("href", "src", "action", "xlink:href", "background")
+_ON_ATTR_RE = re.compile(r"^on[a-z]+$", re.IGNORECASE)
+_JS_PROTO_RE = re.compile(r"^\s*(javascript|data|vbscript)\s*:", re.IGNORECASE)
+
+
+def sanitize_full_page(raw_html: str) -> str:
+    """清洗整页 HTML：去脚本/事件/危险协议；保留 head/style/css。
+
+    输出最终会通过 iframe srcdoc + sandbox="" 渲染，沙箱本身会阻止脚本执行，
+    这里再做一道服务端剥离，保证即使沙箱配置出错也没有可执行内容。
+    """
+    soup = BeautifulSoup(raw_html, "html.parser")
+
+    for tag_name in FULL_PAGE_REMOVED_TAGS:
+        for tag in soup.find_all(tag_name):
+            if isinstance(tag, Tag):
+                tag.decompose()
+
+    # 阻断自动跳转：<meta http-equiv="refresh">
+    for tag in soup.find_all("meta"):
+        if isinstance(tag, Tag) and str(tag.get("http-equiv", "")).lower() == "refresh":
+            tag.decompose()
+
+    for tag in soup.find_all(True):
+        if not isinstance(tag, Tag):
+            continue
+        for attr in list(tag.attrs.keys()):
+            if _ON_ATTR_RE.match(attr) or attr.lower() in FULL_PAGE_DANGEROUS_ATTRS:
+                del tag.attrs[attr]
+        for attr_name in _URL_ATTRS:
+            val = tag.get(attr_name)
+            if isinstance(val, str) and _JS_PROTO_RE.match(val):
+                del tag.attrs[attr_name]
+
+    return str(soup)
+
+
 def validate_import_html(
     raw_html: str,
 ) -> tuple[list[ValidationError], str, dict[str, str]]:
@@ -165,12 +221,11 @@ def validate_import_html(
             )
 
     # ── 4. 禁止 on* 事件属性 ───────────────────────────────────────────────────
-    _ON_ATTR_RE = re.compile(r"^on[a-z]+$")
     for tag in soup.find_all(True):
         if not isinstance(tag, Tag):
             continue
         for attr in list(tag.attrs.keys()):
-            if _ON_ATTR_RE.match(attr.lower()):
+            if _ON_ATTR_RE.match(attr):
                 errors.append(
                     ValidationError(
                         line=_get_line(tag),
@@ -179,8 +234,7 @@ def validate_import_html(
                     )
                 )
 
-    # ── 5. 禁止 javascript: 协议（href / src / action） ───────────────────────
-    _JS_PROTO_RE = re.compile(r"javascript\s*:", re.IGNORECASE)
+    # ── 5. 禁止 javascript:/data:/vbscript: 协议（href / src / action） ───────
     for attr_name in ("href", "src", "action"):
         for tag in soup.find_all(attrs={attr_name: True}):
             if not isinstance(tag, Tag):

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>原子能力优化建议</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Noto+Serif+SC:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F3EE;
+      --surface: #FFFFFF;
+      --text: #1A1814;
+      --text-2: #6D6A64;
+      --text-3: #A09C95;
+      --accent: #2C4A3A;
+      --accent-light: #4A7C6A;
+      --gold: #967B3E;
+      --border: #E2DED6;
+      --border-light: #EDEAE4;
+      --red-bg: #FBF3F3;
+      --red-text: #7A2E2E;
+      --red-border: #EDD0D0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      font-size: 16px;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 2px;
+      width: 0%;
+      background: var(--gold);
+      z-index: 200;
+      transition: width 0.08s linear;
+    }
+
+    .wrap {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    /* ─── Header ─── */
+    header {
+      padding: 56px 0 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-family: 'DM Serif Display', 'Noto Serif SC', serif;
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 20px;
+      white-space: nowrap;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .header-lead {
+      font-size: 17px;
+      color: var(--text-2);
+      line-height: 1.75;
+      max-width: 540px;
+      font-weight: 300;
+    }
+
+    /* ─── Section wrapper ─── */
+    section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-of-type {
+      border-bottom: none;
+      padding-bottom: 72px;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .sec-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .sec-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .sec-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── Problem cards ─── */
+    .problem-list { display: flex; flex-direction: column; }
+
+    .problem-card {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 0 24px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .problem-card:last-child { border-bottom: none; }
+
+    .p-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 32px;
+      font-style: italic;
+      color: var(--border);
+      line-height: 1;
+      padding-top: 3px;
+      text-align: right;
+    }
+
+    .p-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .p-body {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.85;
+      font-weight: 300;
+    }
+
+    /* ─── Gain / Loss ─── */
+    .gain-loss {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 36px;
+    }
+
+    .gain-col { background: var(--surface); border-right: 1px solid var(--border); }
+    .loss-col { background: var(--red-bg); }
+
+    .col-inner { padding: 22px 26px; }
+
+    .col-head {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .gain-col .col-head { color: var(--accent-light); border-color: var(--border-light); }
+    .loss-col .col-head { color: var(--red-text); border-color: var(--red-border); }
+
+    .col-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+
+    .col-list li {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-2);
+      padding-left: 18px;
+      position: relative;
+      font-weight: 300;
+    }
+
+    .gain-col .col-list li::before {
+      content: '+';
+      position: absolute; left: 0;
+      color: var(--accent-light);
+      font-weight: 500;
+    }
+
+    .loss-col .col-list li::before {
+      content: '−';
+      position: absolute; left: 0;
+      color: var(--red-text);
+      font-weight: 500;
+    }
+
+    /* ─── Analysis ─── */
+    .sub-heading {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+      margin-top: 36px;
+      margin-bottom: 16px;
+    }
+
+    .analysis-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .analysis-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .a-tag {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--text-3);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 9px;
+      white-space: nowrap;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+
+    .a-text {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.8;
+      font-weight: 300;
+    }
+
+    /* ─── Pull quote ─── */
+    .pull-quote {
+      border-left: 3px solid var(--gold);
+      padding: 16px 24px;
+      margin: 0 0 32px;
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .pull-quote p {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 17px;
+      color: var(--text);
+      line-height: 1.75;
+      font-weight: 300;
+    }
+
+    /* ─── Steps ─── */
+    .steps { display: flex; flex-direction: column; }
+
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0 20px;
+    }
+
+    .step-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .step-dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .step-connector {
+      width: 1px;
+      flex: 1;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    .step:last-child .step-connector { display: none; }
+
+    .step-right { padding-bottom: 28px; }
+    .step:last-child .step-right { padding-bottom: 0; }
+
+    .step-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 34px;
+      margin-bottom: 10px;
+    }
+
+    .step-body {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.85;
+      font-weight: 300;
+    }
+
+    .step-sub {
+      margin-top: 14px;
+      padding: 16px 20px;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+    }
+
+    .step-sub-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .step-sub-list li {
+      font-size: 14px;
+      color: var(--text-2);
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    .step-sub-list li::before {
+      content: '·';
+      position: absolute; left: 0;
+      color: var(--gold);
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .step-note {
+      font-size: 14px;
+      color: var(--text-3);
+      font-style: italic;
+      margin-top: 10px;
+    }
+
+    /* ─── Outcome ─── */
+    .outcome-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .outcome-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px;
+    }
+
+    .out-period {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .out-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .out-body {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.75;
+      font-weight: 300;
+    }
+
+    /* ─── Timeline table ─── */
+    .tl-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .tl-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 0 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tl-table th:first-child { padding-left: 0; }
+    .tl-table th:last-child { text-align: right; padding-right: 0; }
+
+    .tl-table td {
+      padding: 16px 20px;
+      font-size: 14px;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: top;
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    .tl-table td:first-child { padding-left: 0; }
+    .tl-table td:last-child { text-align: right; padding-right: 0; }
+    .tl-table tr:last-child td { border-bottom: none; }
+
+    .tl-stage {
+      color: var(--text);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .tl-week {
+      color: var(--gold);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .footnote {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-light);
+      font-size: 13px;
+      color: var(--text-3);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* ─── Scroll fade in ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 680px) {
+      .wrap { padding: 0 24px; }
+      header { padding: 60px 0 48px; }
+      section { padding: 56px 0; }
+      .gain-loss { grid-template-columns: 1fr; }
+      .gain-col { border-right: none; border-bottom: 1px solid var(--border); }
+      .outcome-grid { grid-template-columns: 1fr; }
+      .header-stats { flex-wrap: wrap; gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <header class="reveal">
+    <div class="eyebrow">内部建议文档</div>
+    <h1>原子能力 <em>优化建议</em></h1>
+    <p class="header-lead">从业务知识深度与工程规范出发的系统性重建路线。</p>
+  </header>
+
+  <!-- 01 现状诊断 -->
+  <section class="reveal">
+    <div class="section-label">
+      <span class="sec-num">01</span>
+      <h2 class="sec-title">现状诊断</h2>
+      <div class="sec-rule"></div>
+    </div>
+
+    <div class="problem-list">
+      <div class="problem-card">
+        <div class="p-num">1</div>
+        <div>
+          <div class="p-title">业务领域知识太浅</div>
+          <div class="p-body">最初设计每个原子能力的 SOP 时，只有一个名称加上大模型自动生成的简单说明，没有真正深入到各自的业务领域中去研究。这直接导致模型在执行任务时缺乏专业背景，输出内容浮在表面、缺乏深度，碰到具体业务场景很容易出现无从判断的情况。</div>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="p-num">2</div>
+        <div>
+          <div class="p-title">上下游依赖关系没处理干净</div>
+          <div class="p-body">最初 SOP 的设计是各自独立的，之间没有依赖关系。但这版原子能力是以图谱方式搭建的，节点之间存在上下游依赖。问题在于，提示词没有随着这个结构变化做对应调整——下游节点在没有上游数据支撑的情况下，仍然要求输出结论，模型只能"合理推断"来填补空白。这是目前幻觉问题出现频率最高的根本原因。</div>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="p-num">3</div>
+        <div>
+          <div class="p-title">Agent 工程设计过于简单</div>
+          <div class="p-body">受制于前期时间和 SOP 质量，整体 agent 的搭建较为粗糙，不符合标准的 agent harness 规范。具体表现在：上下文没有统一管理机制、工具调用缺乏规范约束、节点之间缺少编排钩子、输出结果没有验证闭环。这导致系统在复杂场景下容错能力差，一旦某个环节出问题，整条链路都会受到影响。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 只改提示词的局限 -->
+  <section class="reveal">
+    <div class="section-label">
+      <span class="sec-num">02</span>
+      <h2 class="sec-title">只改提示词，为什么不够</h2>
+      <div class="sec-rule"></div>
+    </div>
+
+    <div class="gain-loss">
+      <div class="gain-col">
+        <div class="col-inner">
+          <div class="col-head">确实有提升</div>
+          <ul class="col-list">
+            <li>搜索不再套固定模板，能按地区、语言、时效分别组织查询</li>
+            <li>分析结果能说清楚依据是什么，而不是"看起来说得通"</li>
+            <li>链接、文号不再随意生成</li>
+            <li>信息不足时会明确说缺什么，而不是悄悄补一个合理的答案</li>
+          </ul>
+        </div>
+      </div>
+      <div class="loss-col">
+        <div class="col-inner">
+          <div class="col-head">引发的新问题</div>
+          <ul class="col-list">
+            <li>等待时间变长，用户体感上像是"卡住了"</li>
+            <li>偶发出现"证据不足、无法验证"，不同场景容忍度不同</li>
+            <li>无测试介入直接上线，稳定性风险极高</li>
+            <li>无法跨原子能力复用，每次都要从头来过</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-heading">为什么会出现"证据不足"</div>
+    <div class="analysis-list">
+      <div class="analysis-row">
+        <span class="a-tag">目标冲突</span>
+        <span class="a-text">提示词收紧后，模型同时面对两个目标：满足当前系统提示词的输出要求，以及遇到证据不足时不能编造内容。两个目标在特定条件下是互斥的。</span>
+      </div>
+      <div class="analysis-row">
+        <span class="a-tag">缺少机制</span>
+        <span class="a-text">当证据确实不够，又没有自动补充数据的循环机制时，模型只剩两个出口——要么说"无法验证"，要么绕过限制输出幻觉内容。这不是提示词能解决的问题。</span>
+      </div>
+      <div class="analysis-row">
+        <span class="a-tag">本质局限</span>
+        <span class="a-text">提示词只能优化单次输出的质量，解决不了上下游依赖混乱、工程结构薄弱、业务知识不足这些更底层的问题。只改提示词，到最后只会越来越像拆东墙补西墙，而且后续大概率需要返工。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 推荐路线 -->
+  <section class="reveal">
+    <div class="section-label">
+      <span class="sec-num">03</span>
+      <h2 class="sec-title">推荐优化路线</h2>
+      <div class="sec-rule"></div>
+    </div>
+
+    <div class="pull-quote">
+      <p>不追求全面铺开，先集中资源把最重要的做扎实，建立可复用的基础之后再向其余原子能力扩展。每一批的改动都应该是稳定的、可验收的、可沉淀的。</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-left">
+          <div class="step-dot">1</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">优先级筛选</div>
+          <div class="step-body">从全量原子能力中，优先选出客户需求量大、最能体现系统整体价值的那一批作为首批改造对象。筛选参考两个维度：一是被调用的频率，二是这个能力的输出质量对最终报告的影响程度。不必追求全量改造，先把头部的 10 到 15 个做出标杆。</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-dot">2</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">业务知识学习与调研</div>
+          <div class="step-body">从零开始真正理解这个原子能力对应的业务领域。需要搞清楚：在这个领域里解决的是什么问题、用户的实际使用场景是什么、什么样的输出才算专业、边界情况有哪些。这一步不能省，业务理解的深度直接决定后续所有工作的质量上限。</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-dot">3</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">明确验收标准</div>
+          <div class="step-body">在动工之前，先确认一个短期内可实现且提升效果明显的小目标。验收标准要具体，不能是"质量更好"这类模糊描述，而是可衡量的表述。有了验收标准，整个改造过程才有参照，测试介入才有依据。</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-dot">4</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">工程规范化改造</div>
+          <div class="step-body">按照 agent harness 的设计规范，对选定的原子能力做结构性重建，主要涵盖以下几个方向：</div>
+          <div class="step-sub">
+            <ul class="step-sub-list">
+              <li>上下文管理：明确每个节点需要接收哪些上游信息、输出哪些内容给下游，不能依赖模型自己"猜"</li>
+              <li>工具调用规范：联网搜索、接口调用、分组查询等工具的调用逻辑需要有明确约束，包括什么时候调用、调用失败怎么处理</li>
+              <li>编排钩子：在关键节点之间加入检查点，确保上游有有效输出之后下游才触发</li>
+              <li>验证闭环：输出结果要经过格式、来源、逻辑等维度的校验，而不是直接透传给用户</li>
+            </ul>
+          </div>
+          <div class="step-note">这些工程层面的改动，有相当一部分（工具、插件、验证逻辑）是可以在不同原子能力之间复用的。第一批做扎实之后，后续的迭代速度会明显加快。</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-dot">5</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">测试介入</div>
+          <div class="step-body">每个原子能力上线前必须经过系统性测试，覆盖正常场景、边界场景和异常场景。测试不是可选项，是防止重蹈之前频繁报错覆辙的唯一保障。验收标准在第三步已经确认，测试阶段就是对照标准逐条核查。</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-dot">6</div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">业务上线与持续观察</div>
+          <div class="step-body">通过测试后上线，同时保留回滚机制。上线初期做重点观察，收集实际使用中出现的问题，纳入下一批迭代的参考。每批结束后通测一次再进入下一批，比全部做完再统一测试省很多时间。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 预期效果 -->
+  <section class="reveal">
+    <div class="section-label">
+      <span class="sec-num">04</span>
+      <h2 class="sec-title">预期效果</h2>
+      <div class="sec-rule"></div>
+    </div>
+
+    <div class="outcome-grid">
+      <div class="outcome-card">
+        <div class="out-period">短期</div>
+        <div class="out-title">首批有明确标杆</div>
+        <div class="out-body">首批原子能力在业务深度、输出质量、稳定性上有明显提升，有具体的验收结果可以对外展示。</div>
+      </div>
+      <div class="outcome-card">
+        <div class="out-period">中期</div>
+        <div class="out-title">可复用资产沉淀</div>
+        <div class="out-body">工具、验证逻辑、工程规范等可复用资产沉淀下来，后续每一批改造成本逐步下降，不需要每次都从头搭建。</div>
+      </div>
+      <div class="outcome-card">
+        <div class="out-period">长期</div>
+        <div class="out-title">系统可持续迭代</div>
+        <div class="out-body">整个体系建立在规范的工程基础上，具备可测试、可监控、可迭代的能力，稳定性和用户体验都能持续提升。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 推进节奏 -->
+  <section class="reveal">
+    <div class="section-label">
+      <span class="sec-num">05</span>
+      <h2 class="sec-title">推进节奏</h2>
+      <div class="sec-rule"></div>
+    </div>
+
+    <table class="tl-table">
+      <thead>
+        <tr>
+          <th>阶段</th>
+          <th>主要工作</th>
+          <th>预期周期</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tl-stage">优先级筛选</span></td>
+          <td>确定首批改造对象，明确验收标准</td>
+          <td><span class="tl-week">1 天</span></td>
+        </tr>
+        <tr>
+          <td><span class="tl-stage">业务调研</span></td>
+          <td>深入学习首批原子能力的业务领域，梳理边界情况</td>
+          <td><span class="tl-week">2–3 天</span></td>
+        </tr>
+        <tr>
+          <td><span class="tl-stage">工程改造</span></td>
+          <td>按规范重建，工具和可复用组件同步沉淀</td>
+          <td><span class="tl-week">1 周</span></td>
+        </tr>
+        <tr>
+          <td><span class="tl-stage">测试介入</span></td>
+          <td>系统性测试，对照验收标准逐项核查</td>
+          <td><span class="tl-week">1 周</span></td>
+        </tr>
+        <tr>
+          <td><span class="tl-stage">上线观察</span></td>
+          <td>上线后重点监控，收集问题，纳入下一批迭代</td>
+          <td><span class="tl-week">持续</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footnote">
+      首批完成后，后续每批的业务调研和工程改造周期会随着经验和工具的积累逐步缩短。可复用的工程资产越多，后面的迭代就越快。每个原子能力到达验收线后即冻结，进入下一个，不在单个上无限打磨。
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const bar = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const s = document.documentElement.scrollTop;
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (s / h * 100) + '%';
+  }, { passive: true });
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('in'), i * 60);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -32px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{# Folder dropdown: include with `with field_id="..." class_name="modal-input"` #}
+<select class="{{ class_name|default:'form-input' }}"
+        id="{{ field_id }}"
+        name="parent_id"
+        {% if x_model %}x-model="{{ x_model }}"{% endif %}>
+  <option value="">（根目录）</option>
+  {% for opt in folder_options %}
+    <option value="{{ opt.id }}">{{ opt.indent }}{{ opt.title }}</option>
+  {% endfor %}
+</select>

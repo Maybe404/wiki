@@ -175,20 +175,13 @@ def _render_public_catalog_node(item: dict, index: int) -> str:
     children_html = ""
     if children:
         inner = "".join(
-            _render_public_catalog_node(child, i)
-            for i, child in enumerate(children, 1)
+            _render_public_catalog_node(child, i) for i, child in enumerate(children, 1)
         )
         children_html = f'<ol class="pub-catalog-children">{inner}</ol>'
 
-    meta = (
-        f'<span class="pub-catalog-meta">发布于 {date_label}</span>'
-        if date_label
-        else ""
-    )
+    meta = f'<span class="pub-catalog-meta">发布于 {date_label}</span>' if date_label else ""
     child_count = (
-        f'<span class="pub-catalog-count">{len(children)} 个子文档</span>'
-        if children
-        else ""
+        f'<span class="pub-catalog-count">{len(children)} 个子文档</span>' if children else ""
     )
 
     return (
@@ -198,10 +191,10 @@ def _render_public_catalog_node(item: dict, index: int) -> str:
         '<span class="pub-catalog-copy">'
         f'<span class="pub-catalog-title">{title}</span>'
         f'<span class="pub-catalog-row">{meta}{child_count}</span>'
-        '</span>'
-        '</a>'
-        f'{children_html}'
-        '</li>'
+        "</span>"
+        "</a>"
+        f"{children_html}"
+        "</li>"
     )
 
 
@@ -209,7 +202,6 @@ def _render_public_catalog_node(item: dict, index: int) -> str:
 def render_public_catalog(tree_data: list) -> str:
     """渲染公开文档库主目录。比侧栏更适合浏览，保留文档层级。"""
     inner = "".join(
-        _render_public_catalog_node(item, index)
-        for index, item in enumerate(tree_data, 1)
+        _render_public_catalog_node(item, index) for index, item in enumerate(tree_data, 1)
     )
     return mark_safe(f'<ol class="pub-catalog-list">{inner}</ol>')

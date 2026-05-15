@@ -75,8 +75,52 @@ def test_import_validate_accepts_full_page_html(client, django_user_model):
     assert response.status_code == 200
     body = response.content.decode()
     assert "校验通过" in body
-    assert "个可编辑区域" in body
+    # 完整 HTML 页面：保留原版式，不再拆成 editable blocks
+    assert "完整 HTML 页面" in body
     assert "禁止使用" not in body
+    # script 被剥离，style 原样保留
+    assert "alert(" not in body
+    assert "<style>body { color: red; }</style>" in body
+
+
+@pytest.mark.django_db
+def test_import_confirm_full_page_into_folder(client, django_user_model):
+    from apps.documents.models import Document, DocumentVersion
+
+    user = django_user_model.objects.create_user(
+        username="full-page-editor",
+        password="not-used",
+    )
+    client.force_login(user)
+    folder = Document.add_root(
+        title="设计文档",
+        slug="folder-design",
+        node_type=Document.NodeType.FOLDER,
+        owner=user,
+    )
+
+    raw_html = (
+        "<!DOCTYPE html><html><head><style>h1 { color: blue; }</style></head>"
+        "<body><h1>原子能力优化建议</h1></body></html>"
+    )
+    response = client.post(
+        "/admin/import/confirm/",
+        {
+            "raw_html": raw_html,
+            "title": "原子能力优化建议",
+            "slug": "atomic-opt",
+            "parent_id": str(folder.pk),
+        },
+        HTTP_HOST="127.0.0.1",
+    )
+
+    assert response.status_code == 302
+    doc = Document.objects.get(slug="atomic-opt")
+    assert doc.get_parent() == folder
+    version: DocumentVersion = doc.versions.get()
+    assert version.is_full_page is True
+    assert "<style>" in version.html
+    assert "原子能力优化建议" in version.html
 
 
 @pytest.mark.django_db

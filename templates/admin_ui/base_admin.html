@@ -156,8 +156,16 @@
     <!-- ===== Sidebar ===== -->
     <aside class="sidebar" :class="{'sidebar--collapsed': sidebarCollapsed}">
 
-      <!-- Header: user + search -->
+      <!-- Header: brand link + user + search -->
       <div class="sidebar-header">
+        <a class="sidebar-home" href="/" title="返回首页" aria-label="返回首页">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+               stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 6.5L7 2l5 4.5"/>
+            <path d="M3.2 6V12h7.6V6"/>
+          </svg>
+          <span>返回首页</span>
+        </a>
         <div class="sidebar-user">
           <div class="sidebar-user-avatar">
             {{ request.user.username|slice:":2"|upper }}
@@ -170,13 +178,8 @@
         </button>
       </div>
 
-      <!-- Tree -->
-      <div class="sidebar-tree-wrap">
-        {% block sidebar_tree %}{% endblock %}
-      </div>
-
-      <!-- Footer -->
-      <div class="sidebar-footer">
+      <!-- Toolbar (above tree, like common file managers) -->
+      <div class="sidebar-toolbar-wrap">
         <div class="sidebar-toolbar" role="toolbar" aria-label="目录操作">
           <button class="sidebar-tool-btn"
                   type="button"
@@ -224,6 +227,11 @@
             </svg>
           </button>
         </div>
+      </div>
+
+      <!-- Tree -->
+      <div class="sidebar-tree-wrap">
+        {% block sidebar_tree %}{% endblock %}
       </div>
 
     </aside>
@@ -323,14 +331,8 @@
        aria-labelledby="new-doc-title">
     <form class="modal" method="post" action="{% url 'admin_doc_create' %}">
       {% csrf_token %}
-      <input type="hidden" name="parent_id" :value="newDocParentId">
       <h2 class="modal-title" id="new-doc-title">新建文档</h2>
-      <p class="modal-hint" x-show="!newDocParentTitle">
-        将创建在根目录。选中文件夹后，可在该路径下新建文档。
-      </p>
-      <p class="modal-hint" x-show="newDocParentTitle" style="display:none;">
-        将创建在「<span x-text="newDocParentTitle"></span>」下方。
-      </p>
+      <p class="modal-hint">在下方选择目标目录后再创建。</p>
       <div class="modal-field">
         <label class="modal-label" for="new-doc-title-input">文档标题</label>
         <input class="modal-input"
@@ -354,6 +356,10 @@
                autocomplete="off"
                spellcheck="false">
       </div>
+      <div class="modal-field">
+        <label class="modal-label" for="new-doc-parent-input">目标目录</label>
+        {% include "admin_ui/_folder_select.html" with field_id="new-doc-parent-input" class_name="modal-input" x_model="newDocParentId" %}
+      </div>
       <div class="modal-actions">
         <a class="btn-secondary" href="{% url 'admin_import' %}">从 HTML 导入</a>
         <button type="button" class="btn-secondary" @click="newDocOpen = false">取消</button>
@@ -375,12 +381,8 @@
        aria-labelledby="new-folder-title">
     <form class="modal" method="post" action="{% url 'admin_folder_create' %}">
       {% csrf_token %}
-      <input type="hidden" name="parent_id" :value="newFolderParentId">
       <h2 class="modal-title" id="new-folder-title">新建文件夹</h2>
-      <p class="modal-hint" x-show="!newFolderParentTitle">用于整理后台目录，可拖拽移动。</p>
-      <p class="modal-hint" x-show="newFolderParentTitle" style="display:none;">
-        将创建在「<span x-text="newFolderParentTitle"></span>」下方。
-      </p>
+      <p class="modal-hint">用于整理后台目录，可拖拽移动。</p>
       <div class="modal-field">
         <label class="modal-label" for="new-folder-title-input">文件夹名称</label>
         <input class="modal-input"
@@ -392,6 +394,10 @@
                maxlength="200"
                autocomplete="off"
                required>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="new-folder-parent-input">父目录</label>
+        {% include "admin_ui/_folder_select.html" with field_id="new-folder-parent-input" class_name="modal-input" x_model="newFolderParentId" %}
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-secondary" @click="newFolderOpen = false">取消</button>
@@ -458,10 +464,8 @@
 
         newDocOpen: false,
         newDocParentId: '',
-        newDocParentTitle: '',
         newFolderOpen: false,
         newFolderParentId: '',
-        newFolderParentTitle: '',
         selectedNodeId: '',
         selectedNodeType: '',
         selectedNodeTitle: '',
@@ -542,38 +546,27 @@
           window.location.href = item.url;
         },
 
-        currentFolderTarget() {
-          if (!this.selectedNodeId) {
-            return { id: '', title: '' };
+        currentFolderTargetId() {
+          // Preselect target only when a folder row is highlighted
+          if (this.selectedNodeId && this.selectedNodeType === 'folder') {
+            return this.selectedNodeId;
           }
-          if (this.selectedNodeType !== 'folder') {
-            showToast('只能在文件夹中创建', true);
-            return null;
-          }
-          return { id: this.selectedNodeId, title: this.selectedNodeTitle };
+          return '';
         },
 
-        openNewDoc(parentId, parentTitle) {
-          const target = parentId !== undefined
-            ? { id: parentId || '', title: parentTitle || '' }
-            : this.currentFolderTarget();
-          if (!target) return;
-          this.newDocParentId = target.id;
-          this.newDocParentTitle = target.title;
+        openNewDoc(parentId) {
+          this.newDocParentId = parentId !== undefined ? (parentId || '') : this.currentFolderTargetId();
           this.newDocOpen = true;
           this.$nextTick(() => this.$refs.newDocTitle?.focus());
         },
 
         openNewFolderForSelection() {
-          const target = this.currentFolderTarget();
-          if (!target) return;
-          this.openNewFolder(target.id, target.title);
+          this.openNewFolder(this.currentFolderTargetId());
         },
 
-        openNewFolder(parentId, parentTitle) {
+        openNewFolder(parentId) {
           this.ctxMenu.open = false;
           this.newFolderParentId = parentId || '';
-          this.newFolderParentTitle = parentTitle || '';
           this.newFolderOpen = true;
           this.$nextTick(() => this.$refs.newFolderTitle?.focus());
         },
@@ -613,10 +606,8 @@
               if (this.searchOpen) { this.closeSearch(); return; }
               this.newDocOpen = false;
               this.newDocParentId = '';
-              this.newDocParentTitle = '';
               this.newFolderOpen = false;
               this.newFolderParentId = '';
-              this.newFolderParentTitle = '';
               this.ctxMenu.open = false;
             }
           });
@@ -722,14 +713,12 @@
         },
 
         ctxMenuAction(action) {
-          const nodeId = this.ctxMenu.nodeId;
-          const nodeTitle = this.ctxMenu.nodeTitle;
-          const nodeType = this.ctxMenu.nodeType;
+          const { nodeId, nodeTitle, nodeType } = this.ctxMenu;
           this.ctxMenu.open = false;
           if (action === 'add-doc') {
-            this.openNewDoc(nodeId, nodeTitle);
+            this.openNewDoc(nodeId);
           } else if (action === 'add-folder') {
-            this.openNewFolder(nodeId, nodeTitle);
+            this.openNewFolder(nodeId);
           } else if (action === 'delete') {
             this.deleteNode(nodeId, nodeTitle, nodeType);
           }
