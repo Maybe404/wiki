@@ -1,7 +1,7 @@
 {% extends "base_public.html" %}
 {% load static doc_tree %}
 
-{% block title %}{{ document.title }} — Docsite{% endblock %}
+{% block title %}{{ document.title }} — Atlas{% endblock %}
 
 {% block nav_actions %}
   <button type="button" class="pub-btn pub-btn--ghost" id="btn-pub-versions"
@@ -57,7 +57,7 @@
   </main>
 
   <aside class="pub-toc" aria-label="页内目录">
-    <p class="pub-toc-title">On this page</p>
+    <p class="pub-toc-title">本页目录</p>
     <nav>
       {% if toc_items %}
         {% for item in toc_items %}
@@ -87,8 +87,4 @@
     </div>
   </div>
 </aside>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/public_shell.js' %}" defer></script>
 {% endblock %}

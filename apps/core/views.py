@@ -35,9 +35,11 @@ def docs_index(request: HttpRequest) -> HttpResponse:
     )
 
     toc_items = [
-        {"id": "recent", "text": "最近发布"},
-        {"id": "all", "text": "全部文档"},
+        {"id": "hero", "text": "文档库"},
+        {"id": "catalog", "text": "目录总览"},
     ]
+    if recent:
+        toc_items.append({"id": "recent", "text": "最近发布"})
 
     return render(
         request,

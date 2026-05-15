@@ -2,8 +2,10 @@
 
 流程：
 1. validate_import_html(html) → (errors, cleaned_html, editable_blocks)
-2. 有错误 → cleaned_html 和 editable_blocks 为空，不应继续入库
-3. 无错误 → cleaned_html 经过 bleach 清洗，editable_blocks 是 {id: inner_html}
+2. 完整页面先提取正文，并移除脚本、样式、外部资源等页面级内容
+3. 没有手工 data-editable 标记时，自动为正文文本生成可编辑区域
+4. 有错误 → cleaned_html 和 editable_blocks 为空，不应继续入库
+5. 无错误 → cleaned_html 经过 bleach 清洗，editable_blocks 是 {id: inner_html}
 """
 
 from __future__ import annotations
@@ -54,6 +56,47 @@ IMPORT_ALLOWED_ATTRS: dict[str, list[str]] = {
 IMPORT_ALLOWED_PROTOCOLS: list[str] = ["http", "https", "mailto"]
 
 # 禁止的 class 中不做白名单限制（AI 可使用系统 class），只禁止危险属性和标签
+REMOVED_IMPORT_TAGS = (
+    "script",
+    "iframe",
+    "style",
+    "object",
+    "embed",
+    "link",
+    "meta",
+    "title",
+    "head",
+    "progress",
+)
+
+AUTO_EDITABLE_TAGS = {
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "p",
+    "li",
+    "blockquote",
+    "td",
+    "th",
+    "div",
+    "span",
+}
+
+BLOCK_CHILD_TAGS = {
+    "article",
+    "blockquote",
+    "div",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "ol",
+    "p",
+    "section",
+    "table",
+    "ul",
+}
 
 
 @dataclass
@@ -79,10 +122,10 @@ def validate_import_html(
     """
     errors: list[ValidationError] = []
 
-    html = _unwrap_body(raw_html)
+    html = _prepare_import_html(raw_html)
     soup = BeautifulSoup(html, "html.parser")
 
-    # ── 1. 禁止标签 ────────────────────────────────────────────────────────────
+    # ── 1. 禁止标签（预处理已移除，这里作为防御性兜底）─────────────────────────
     for tag_name in ("script", "iframe", "style", "object", "embed"):
         for tag in soup.find_all(tag_name):
             if not isinstance(tag, Tag):
@@ -95,7 +138,7 @@ def validate_import_html(
                 )
             )
 
-    # ── 2. 禁止 <link> 标签（外部 CSS / 字体） ─────────────────────────────────
+    # ── 2. 禁止 <link> 标签（预处理已移除，这里作为防御性兜底）─────────────────
     for tag in soup.find_all("link"):
         if not isinstance(tag, Tag):
             continue
@@ -207,6 +250,65 @@ def validate_import_html(
 
     editable_blocks = _extract_editable_blocks(cleaned)
     return [], cleaned, editable_blocks
+
+
+def _prepare_import_html(raw_html: str) -> str:
+    """将页面型 HTML 转为可导入的安全正文片段。"""
+    html = _unwrap_body(raw_html)
+    soup = BeautifulSoup(html, "html.parser")
+
+    for tag_name in REMOVED_IMPORT_TAGS:
+        for tag in soup.find_all(tag_name):
+            if isinstance(tag, Tag):
+                tag.decompose()
+
+    if not soup.find(attrs={"data-editable": "true"}):
+        _auto_mark_editable_blocks(soup)
+
+    return soup.decode_contents()
+
+
+def _auto_mark_editable_blocks(soup: BeautifulSoup) -> None:
+    """为普通正文 HTML 自动补齐编辑器需要的 data-editable 标记。"""
+    used_ids = {
+        str(tag.get("data-editable-id", "")).strip()
+        for tag in soup.find_all(attrs={"data-editable-id": True})
+        if isinstance(tag, Tag)
+    }
+    used_ids.discard("")
+
+    count = 1
+    for tag in soup.find_all(tuple(AUTO_EDITABLE_TAGS)):
+        if not isinstance(tag, Tag) or not _is_auto_editable_candidate(tag):
+            continue
+
+        base_id = f"auto-{tag.name}-{count}"
+        editable_id = base_id
+        suffix = 2
+        while editable_id in used_ids:
+            editable_id = f"{base_id}-{suffix}"
+            suffix += 1
+
+        tag["data-editable"] = "true"
+        tag["data-editable-id"] = editable_id
+        used_ids.add(editable_id)
+        count += 1
+
+
+def _is_auto_editable_candidate(tag: Tag) -> bool:
+    """判断元素是否适合作为一个独立可编辑文本块。"""
+    if tag.find_parent(attrs={"data-editable": "true"}):
+        return False
+    if tag.find(attrs={"data-editable": "true"}):
+        return False
+    if not tag.get_text(strip=True):
+        return False
+
+    child_tags = [child for child in tag.find_all(True, recursive=False)]
+    if tag.name in {"div", "span"}:
+        return not child_tags
+
+    return not any(child.name in BLOCK_CHILD_TAGS for child in child_tags)
 
 
 def _unwrap_body(html: str) -> str:

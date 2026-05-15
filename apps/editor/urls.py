@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    create_blank_document,
     import_confirm,
     import_document_page,
     import_validate,
@@ -11,6 +12,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("admin/doc/new/", create_blank_document, name="admin_doc_create"),
     path("admin/doc/<uuid:pk>/save/", save_document, name="admin_doc_save"),
     path("admin/doc/<uuid:pk>/versions/", version_list_api, name="admin_doc_versions"),
     path(

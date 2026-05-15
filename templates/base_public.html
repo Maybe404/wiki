@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Docsite{% endblock %}</title>
+  <title>{% block title %}Atlas{% endblock %}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
     <div class="pub-topnav-inner pub-topnav-inner--with-search">
       <a href="/" class="pub-brand">
         <span class="pub-brand-mark" aria-hidden="true"></span>
-        <span>Docsite</span>
+        <span>Atlas</span>
       </a>
 
       <button type="button" class="pub-search-trigger" id="pub-search-trigger" aria-label="搜索文档（⌘K）">
@@ -57,7 +57,6 @@
     </div>
   </div>
 
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <script src="{% static 'js/public_shell.js' %}" defer></script>
   {% block extra_js %}{% endblock %}
 </body>

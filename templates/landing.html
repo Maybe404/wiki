@@ -1,7 +1,7 @@
 {% extends "base_public.html" %}
 {% load static %}
 
-{% block title %}Docsite — 让团队文档值得被认真读{% endblock %}
+{% block title %}Atlas — 让团队文档值得被认真读{% endblock %}
 
 {% block nav_actions %}
   {% if user.is_authenticated %}
@@ -18,7 +18,6 @@
     <article class="pub-article pub-article--landing">
 
       <section id="intro" class="pub-section pub-section--hero">
-        <span class="pub-badge pub-badge--primary">Internal Docs · v1</span>
         <h1 class="pub-display">让团队文档<br>值得被认真读。</h1>
         <p class="pub-lead">
           一个内部 HTML 文档管理系统：把 AI 生成的内容、规范、流程、调研收进同一处，
@@ -78,7 +77,7 @@
         <div class="pub-code-window">
           <div class="pub-code-bar">
             <span class="pub-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span>docsite/publish.ts</span>
+            <span>atlas/publish.ts</span>
           </div>
 <pre><code><span class="tok-muted">const</span> doc = <span class="tok-coral">await</span> docs.publish({
   slug: <span class="tok-green">"ai-weekly-report"</span>,
@@ -91,11 +90,11 @@ console.log(doc.url);</code></pre>
 
         <h3>② 状态语言与徽章</h3>
         <div class="pub-badge-row">
-          <span class="pub-badge pub-badge--primary">Published</span>
-          <span class="pub-badge">Draft</span>
-          <span class="pub-badge">Internal</span>
-          <span class="pub-badge pub-badge--success">Ready</span>
-          <span class="pub-badge pub-badge--warning">Review</span>
+          <span class="pub-badge pub-badge--primary">已发布</span>
+          <span class="pub-badge">草稿</span>
+          <span class="pub-badge">内部</span>
+          <span class="pub-badge pub-badge--success">可发布</span>
+          <span class="pub-badge pub-badge--warning">待复核</span>
         </div>
 
         <h3>③ 步骤条</h3>
@@ -162,7 +161,7 @@ console.log(doc.url);</code></pre>
   </main>
 
   <aside class="pub-toc" aria-label="页内目录">
-    <p class="pub-toc-title">On this page</p>
+    <p class="pub-toc-title">本页目录</p>
     <nav>
       {% for item in toc_items %}
         <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>

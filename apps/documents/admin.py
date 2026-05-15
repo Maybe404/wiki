@@ -8,8 +8,17 @@ from .models import AuditLog, Document, DocumentVersion, SlugAlias
 @admin.register(Document)
 class DocumentAdmin(TreeAdmin):
     form = movenodeform_factory(Document)
-    list_display = ["title", "slug", "status", "owner", "is_deleted", "created_at", "updated_at"]
-    list_filter = ["status", "is_deleted", "owner"]
+    list_display = [
+        "title",
+        "slug",
+        "node_type",
+        "status",
+        "owner",
+        "is_deleted",
+        "created_at",
+        "updated_at",
+    ]
+    list_filter = ["node_type", "status", "is_deleted", "owner"]
     search_fields = ["title", "slug"]
     readonly_fields = ["id", "created_at", "updated_at", "published_at"]
     ordering = ["path"]

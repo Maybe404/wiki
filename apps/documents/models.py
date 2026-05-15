@@ -10,6 +10,10 @@ User = get_user_model()
 class Document(MP_Node):
     """一篇文档的元信息，使用 MP_Node 实现树形结构。"""
 
+    class NodeType(models.TextChoices):
+        DOCUMENT = "document", "文档"
+        FOLDER = "folder", "文件夹"
+
     class Status(models.TextChoices):
         DRAFT = "draft", "草稿"
         PUBLISHED = "published", "已发布"
@@ -18,6 +22,12 @@ class Document(MP_Node):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200, verbose_name="标题")
     slug = models.SlugField(unique=True, allow_unicode=True, verbose_name="Slug")
+    node_type = models.CharField(
+        max_length=20,
+        choices=NodeType.choices,
+        default=NodeType.DOCUMENT,
+        verbose_name="节点类型",
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,

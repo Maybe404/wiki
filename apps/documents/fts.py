@@ -65,6 +65,7 @@ def _search_by_like(q: str, limit: int = 10) -> dict:
             SELECT id, title, slug, status
             FROM documents_document
             WHERE title LIKE %s AND is_deleted = 0
+              AND node_type = 'document'
             ORDER BY updated_at DESC
             LIMIT %s
             """,
@@ -123,6 +124,7 @@ def search_documents(q: str, limit: int = 20) -> dict:
             JOIN documents_document d ON documents_fts.rowid = d.rowid
             WHERE documents_fts MATCH %s
               AND d.is_deleted = 0
+              AND d.node_type = 'document'
             ORDER BY rank
             LIMIT %s
             """,
@@ -155,6 +157,7 @@ def search_documents(q: str, limit: int = 20) -> dict:
             JOIN documents_document d ON documents_fts.rowid = d.rowid
             WHERE documents_fts MATCH %s
               AND d.is_deleted = 0
+              AND d.node_type = 'document'
             ORDER BY rank
             LIMIT %s
             """,

@@ -168,20 +168,38 @@ body {
 
 .pub-brand-mark {
   position: relative;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 5px;
+  background: rgba(204, 120, 92, 0.08);
 }
 .pub-brand-mark::before,
 .pub-brand-mark::after {
   position: absolute;
-  inset: 7px 1px auto 1px;
-  height: 2px;
   background: var(--color-primary);
-  border-radius: 999px;
   content: "";
 }
-.pub-brand-mark::after { transform: rotate(90deg); }
+.pub-brand-mark::before {
+  left: 5px;
+  top: 4px;
+  width: 7px;
+  height: 1.5px;
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--color-primary), 0 8px 0 var(--color-primary);
+}
+.pub-brand-mark::after {
+  right: 3px;
+  top: 3px;
+  width: 5px;
+  height: 5px;
+  border-top: 1.5px solid var(--color-primary);
+  border-right: 1.5px solid var(--color-primary);
+  border-radius: 0 3px 0 0;
+  background: transparent;
+  opacity: 0.68;
+}
 
 .pub-nav-actions {
   display: inline-flex;
@@ -811,6 +829,94 @@ em     { font-style: italic; }
 .pub-doc-list--dense .pub-doc-link { padding: 14px 4px; }
 .pub-doc-list--dense .pub-doc-title { font-size: 18px; }
 
+.pub-catalog-list,
+.pub-catalog-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pub-catalog-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pub-catalog-children {
+  margin: 6px 0 4px 40px;
+  display: grid;
+  gap: 4px;
+}
+
+.pub-catalog-node {
+  min-width: 0;
+}
+
+.pub-catalog-link {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 14px 16px;
+  color: var(--color-ink);
+  background: var(--color-surface-soft);
+  border-radius: var(--rounded-md);
+  text-decoration: none;
+  transition: background 180ms, transform 120ms;
+}
+
+.pub-catalog-children .pub-catalog-link {
+  padding: 10px 12px;
+  background: transparent;
+}
+
+.pub-catalog-link:hover {
+  background: var(--color-link-hover-fill);
+}
+
+.pub-catalog-link:active {
+  transform: scale(0.99);
+}
+
+.pub-catalog-index {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  color: var(--color-primary);
+}
+
+.pub-catalog-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.pub-catalog-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-title-lg);
+  line-height: 1.28;
+  color: var(--color-ink);
+}
+
+.pub-catalog-children .pub-catalog-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.pub-catalog-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+  line-height: 1.45;
+}
+
+.pub-catalog-count {
+  color: var(--color-ink-muted);
+}
+
 .pub-empty-hint {
   color: var(--color-ink-subtle);
   font-style: italic;
@@ -891,11 +997,9 @@ em     { font-style: italic; }
   color: var(--color-ink-muted);
   text-decoration: none;
   border-radius: var(--rounded-sm);
-  border-left: 2px solid transparent;
-  margin-left: -2px;
   line-height: 1.45;
   cursor: pointer;
-  transition: color 180ms, background 180ms, border-color 180ms;
+  transition: color 180ms, background 180ms;
 }
 
 .pub-toc-link:hover,
@@ -911,7 +1015,7 @@ em     { font-style: italic; }
 .pub-toc-link.is-active {
   color: var(--color-primary);
   background: transparent;
-  border-left-color: var(--color-primary);
+  font-weight: 500;
 }
 .pub-toc-link.is-active:hover {
   background: var(--color-link-hover-fill);
@@ -1117,6 +1221,7 @@ em     { font-style: italic; }
   padding: 80px 16px 16px;
 }
 .pub-search-overlay[hidden] { display: none; }
+body.pub-search-open { overflow: hidden; }
 
 .pub-search-backdrop {
   position: absolute;
@@ -1426,8 +1531,32 @@ em     { font-style: italic; }
   .pub-landing .pub-toc { display: none; }
 }
 
-/* Hide topnav search trigger on narrow screens */
 @media (max-width: 767px) {
-  .pub-search-trigger { display: none; }
-  .pub-topnav-inner--with-search { grid-template-columns: auto auto; }
+  .pub-topnav-inner--with-search {
+    grid-template-columns: auto minmax(44px, 1fr) auto;
+    gap: 8px;
+    padding: 0 12px;
+  }
+  .pub-search-trigger {
+    justify-self: end;
+    width: 44px;
+    min-width: 44px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .pub-search-trigger span,
+  .pub-search-trigger .pub-kbd {
+    display: none;
+  }
+  .pub-search-modal {
+    border-radius: var(--rounded-md);
+  }
+  .pub-catalog-link {
+    grid-template-columns: 26px minmax(0, 1fr);
+    padding: 12px;
+  }
+  .pub-catalog-children {
+    margin-left: 18px;
+  }
 }

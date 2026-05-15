@@ -330,6 +330,68 @@ def _generate_unique_slug(title: str) -> str:
     return f"doc-{secrets.token_hex(6)}"
 
 
+def _blank_document_html() -> tuple[str, dict[str, str]]:
+    """生成新建草稿的最小可编辑 HTML。"""
+    safe_heading = "开始"
+    safe_body = "从这里开始编写正文。"
+    html = (
+        '<section class="doc-section">'
+        f'<h2 data-editable="true" data-editable-id="section-1-title">{safe_heading}</h2>'
+        f'<p data-editable="true" data-editable-id="body-1">{safe_body}</p>'
+        "</section>"
+    )
+    return html, {"section-1-title": safe_heading, "body-1": safe_body}
+
+
+@login_required
+@require_POST
+def create_blank_document(request: HttpRequest) -> HttpResponse:
+    """POST /admin/doc/new/ — 创建一个可立即编辑的空白草稿。"""
+    title = request.POST.get("title", "").strip()[:200] or "未命名文档"
+    raw_slug = request.POST.get("slug", "").strip()
+    parent_id = request.POST.get("parent_id", "").strip()
+    slug = slugify(raw_slug, allow_unicode=True)[:60]
+
+    if not slug or Document.objects.filter(slug=slug, is_deleted=False).exists():
+        slug = _generate_unique_slug(title)
+
+    content_html, editable_blocks = _blank_document_html()
+    doc_kwargs = {
+        "title": title,
+        "slug": slug,
+        "node_type": Document.NodeType.DOCUMENT,
+        "status": Document.Status.DRAFT,
+        "owner": request.user,  # ty: ignore[unresolved-attribute]
+    }
+    if parent_id:
+        parent = get_object_or_404(Document, pk=parent_id, is_deleted=False)
+        if parent.node_type != Document.NodeType.FOLDER:
+            return HttpResponse("只能在文件夹中创建文档", status=400)
+        doc = parent.add_child(**doc_kwargs)
+    else:
+        doc = Document.add_root(**doc_kwargs)
+
+    DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
+        document=doc,
+        html=content_html,
+        editable_blocks=editable_blocks,
+        author=request.user,  # ty: ignore[unresolved-attribute]
+        is_auto=False,
+        note="新建草稿",
+    )
+
+    AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
+        actor=request.user,  # ty: ignore[unresolved-attribute]
+        action=AuditLog.Action.CREATE,
+        target_type="document",
+        target_id=str(doc.pk),
+        payload={"source": "blank", "slug": slug, "title": title, "parent_id": parent_id or None},
+    )
+
+    sync_fts_plain_text(str(doc.pk), content_html)
+    return redirect("admin_doc_detail", pk=doc.pk)
+
+
 @login_required
 def import_document_page(request: HttpRequest) -> HttpResponse:
     """GET /admin/import/ — 显示 AI HTML 导入页面。"""
@@ -418,6 +480,7 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
     doc = Document.add_root(
         title=title,
         slug=slug,
+        node_type=Document.NodeType.DOCUMENT,
         status=Document.Status.DRAFT,
         owner=request.user,  # ty: ignore[unresolved-attribute]
     )

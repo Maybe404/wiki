@@ -4,16 +4,18 @@
   // ── TOC scroll-spy ──────────────────────────────────────────────────────
   const tocLinks = Array.from(document.querySelectorAll('.pub-toc-link'));
   if (tocLinks.length) {
-    const targets = tocLinks
+    const targetPairs = tocLinks
       .map((link) => {
-        const sel = link.dataset.anchor || link.getAttribute('href');
+        const anchor = link.dataset.anchor || link.getAttribute('href');
         try {
-          return sel ? document.querySelector(sel) : null;
+          const target = anchor ? document.querySelector(anchor) : null;
+          return target ? { link, anchor, target } : null;
         } catch (_) {
           return null;
         }
       })
       .filter(Boolean);
+    const targets = targetPairs.map((pair) => pair.target);
 
     if (targets.length) {
       const setActive = (id) => {
@@ -23,17 +25,39 @@
         });
       };
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const visible = entries
-            .filter((e) => e.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-          if (visible && visible.target.id) setActive(visible.target.id);
-        },
-        { rootMargin: '-24% 0px -62% 0px', threshold: [0.1, 0.3, 0.6] }
-      );
+      const navOffset = () => {
+        const nav = document.querySelector('.pub-topnav');
+        return (nav ? nav.getBoundingClientRect().height : 64) + 32;
+      };
 
-      targets.forEach((t) => observer.observe(t));
+      const updateActive = () => {
+        const offset = navOffset();
+        let active = targets[0];
+
+        targets.forEach((target) => {
+          if (target.getBoundingClientRect().top <= offset) active = target;
+        });
+
+        const doc = document.documentElement;
+        const atBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+        if (atBottom) active = targets[targets.length - 1];
+        if (active && active.id) setActive(active.id);
+      };
+
+      let ticking = false;
+      const queueActiveUpdate = () => {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(() => {
+          ticking = false;
+          updateActive();
+        });
+      };
+
+      window.addEventListener('scroll', queueActiveUpdate, { passive: true });
+      window.addEventListener('resize', queueActiveUpdate);
+      window.addEventListener('hashchange', queueActiveUpdate);
+      updateActive();
 
       // Smooth scroll + immediate active state on click
       tocLinks.forEach((link) => {
@@ -44,7 +68,9 @@
           if (!target) return;
           e.preventDefault();
           setActive(anchor.slice(1));
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const top = target.getBoundingClientRect().top + window.scrollY - navOffset();
+          window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' });
           if (history.replaceState) history.replaceState(null, '', anchor);
         });
       });
@@ -62,20 +88,27 @@
     let activeIdx = -1;
     let flatItems = [];
 
-    const open = () => {
-      overlay.hidden = false;
-      setTimeout(() => input.focus(), 60);
-    };
-    const close = () => {
-      overlay.hidden = true;
-      input.value = '';
-      renderHint();
-    };
-
     const renderHint = (msg) => {
       activeIdx = -1;
       flatItems = [];
       body.innerHTML = `<p class="pub-search-hint">${msg || '输入关键词搜索文档 · 按 Esc 关闭'}</p>`;
+    };
+
+    const setOpen = (isOpen) => {
+      overlay.hidden = !isOpen;
+      overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+      document.body.classList.toggle('pub-search-open', isOpen);
+    };
+
+    const open = (event) => {
+      if (event) event.preventDefault();
+      setOpen(true);
+      setTimeout(() => input.focus(), 60);
+    };
+    const close = () => {
+      setOpen(false);
+      input.value = '';
+      renderHint();
     };
 
     const renderResults = (groups) => {
@@ -87,7 +120,9 @@
       }
       const parts = [];
       groups.forEach((g) => {
-        parts.push(`<div class="pub-search-group"><div class="pub-search-group-label">${g.label || ''}</div>`);
+        parts.push(
+          `<div class="pub-search-group"><div class="pub-search-group-label">${escapeHtml(g.label || '')}</div>`
+        );
         g.items.forEach((item) => {
           flatItems.push(item);
           parts.push(
@@ -123,6 +158,7 @@
         if (input.value.trim() === q) renderResults(data.groups || []);
       } catch (e) {
         console.error(e);
+        if (input.value.trim() === q) renderHint('搜索暂时不可用，请稍后重试');
       }
     };
 

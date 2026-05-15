@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}管理后台{% endblock %} · Docsite</title>
+  <title>{% block title %}管理后台{% endblock %} · Atlas</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,7 +135,7 @@
         <line x1="2" y1="13.5" x2="16" y2="13.5"/>
       </svg>
     </button>
-    <a href="/" class="admin-topbar-brand" title="返回首页">Docsite 管理</a>
+    <a href="/" class="admin-topbar-brand" title="返回首页">Atlas 管理</a>
     <a href="/" class="admin-topbar-home" title="查看站点" aria-label="查看站点">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M2 7l6-5 6 5"/>
@@ -177,36 +177,53 @@
 
       <!-- Footer -->
       <div class="sidebar-footer">
-        <button class="btn-new-doc" @click="newDocOpen = true" aria-label="新建文档">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-               stroke-width="1.5" stroke-linecap="round">
-            <line x1="7" y1="2" x2="7" y2="12"/>
-            <line x1="2" y1="7" x2="12" y2="7"/>
-          </svg>
-          新文档
-        </button>
-        <a href="/" class="btn-settings" title="查看站点首页" aria-label="查看站点首页">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 7l6-5 6 5"/>
-            <path d="M3.5 6.5V13h9V6.5"/>
-          </svg>
-        </a>
-        <a href="{% url 'admin_import' %}" class="btn-settings" title="从 HTML 导入" aria-label="从 HTML 导入">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 2v8M5 7l3 4 3-4"/>
-            <path d="M3 13h10"/>
-          </svg>
-        </a>
-        <a href="{% url 'logout' %}" class="btn-settings" title="退出登录" aria-label="退出登录">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
-            <polyline points="11 11 14 8 11 5"/>
-            <line x1="14" y1="8" x2="6" y2="8"/>
-          </svg>
-        </a>
+        <div class="sidebar-toolbar" role="toolbar" aria-label="目录操作">
+          <button class="sidebar-tool-btn"
+                  type="button"
+                  @click="openNewDoc()"
+                  title="新建文件"
+                  aria-label="新建文件">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 2.5h4.5L11 5v6.5H4z"/>
+              <path d="M8.5 2.5V5H11"/>
+            </svg>
+          </button>
+          <button class="sidebar-tool-btn"
+                  type="button"
+                  @click="openNewFolderForSelection()"
+                  title="新建文件夹"
+                  aria-label="新建文件夹">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 4.5V11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5.5a1 1 0 0 0-1-1H7L5.7 3.2A1 1 0 0 0 5 3H3a1 1 0 0 0-1 1.5z"/>
+            </svg>
+          </button>
+          <button class="sidebar-tool-btn"
+                  type="button"
+                  @click="refreshTree()"
+                  title="刷新"
+                  aria-label="刷新">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11.5 5.2A4.5 4.5 0 1 0 12 7"/>
+              <path d="M11.5 2.5v2.7H8.8"/>
+            </svg>
+          </button>
+          <button class="sidebar-tool-btn"
+                  type="button"
+                  @click="toggleTreeFold()"
+                  :title="treeFolded ? '展开全部' : '收起全部'"
+                  :aria-label="treeFolded ? '展开全部' : '收起全部'">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 4.5h8"/>
+              <path d="M3 7h8"/>
+              <path d="M3 9.5h8"/>
+              <path class="sidebar-tool-fold-mark" d="M1.8 5.2l1.2-1.2 1.2 1.2"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
     </aside>
@@ -300,15 +317,87 @@
        x-transition:enter-start="opacity-0"
        x-transition:enter-end="opacity-100"
        @click.self="newDocOpen = false"
-       style="display:none;">
-    <div class="modal">
-      <h2 class="modal-title">新建文档</h2>
-      <p class="modal-hint">编辑功能将在阶段 5 实现。</p>
-      <div class="modal-actions">
-        <button class="btn-secondary" @click="newDocOpen = false">取消</button>
-        <button class="btn-primary" disabled>创建（即将开放）</button>
+       style="display:none;"
+       aria-modal="true"
+       role="dialog"
+       aria-labelledby="new-doc-title">
+    <form class="modal" method="post" action="{% url 'admin_doc_create' %}">
+      {% csrf_token %}
+      <input type="hidden" name="parent_id" :value="newDocParentId">
+      <h2 class="modal-title" id="new-doc-title">新建文档</h2>
+      <p class="modal-hint" x-show="!newDocParentTitle">
+        将创建在根目录。选中文件夹后，可在该路径下新建文档。
+      </p>
+      <p class="modal-hint" x-show="newDocParentTitle" style="display:none;">
+        将创建在「<span x-text="newDocParentTitle"></span>」下方。
+      </p>
+      <div class="modal-field">
+        <label class="modal-label" for="new-doc-title-input">文档标题</label>
+        <input class="modal-input"
+               id="new-doc-title-input"
+               x-ref="newDocTitle"
+               name="title"
+               type="text"
+               placeholder="例如：项目复盘"
+               maxlength="200"
+               autocomplete="off"
+               required>
       </div>
-    </div>
+      <div class="modal-field">
+        <label class="modal-label" for="new-doc-slug-input">访问路径</label>
+        <input class="modal-input"
+               id="new-doc-slug-input"
+               name="slug"
+               type="text"
+               placeholder="可留空，系统自动生成"
+               maxlength="60"
+               autocomplete="off"
+               spellcheck="false">
+      </div>
+      <div class="modal-actions">
+        <a class="btn-secondary" href="{% url 'admin_import' %}">从 HTML 导入</a>
+        <button type="button" class="btn-secondary" @click="newDocOpen = false">取消</button>
+        <button type="submit" class="btn-primary">创建草稿</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== New folder modal ===== -->
+  <div class="modal-overlay"
+       x-show="newFolderOpen"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       @click.self="newFolderOpen = false"
+       style="display:none;"
+       aria-modal="true"
+       role="dialog"
+       aria-labelledby="new-folder-title">
+    <form class="modal" method="post" action="{% url 'admin_folder_create' %}">
+      {% csrf_token %}
+      <input type="hidden" name="parent_id" :value="newFolderParentId">
+      <h2 class="modal-title" id="new-folder-title">新建文件夹</h2>
+      <p class="modal-hint" x-show="!newFolderParentTitle">用于整理后台目录，可拖拽移动。</p>
+      <p class="modal-hint" x-show="newFolderParentTitle" style="display:none;">
+        将创建在「<span x-text="newFolderParentTitle"></span>」下方。
+      </p>
+      <div class="modal-field">
+        <label class="modal-label" for="new-folder-title-input">文件夹名称</label>
+        <input class="modal-input"
+               id="new-folder-title-input"
+               x-ref="newFolderTitle"
+               name="title"
+               type="text"
+               placeholder="例如：产品规范"
+               maxlength="200"
+               autocomplete="off"
+               required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" @click="newFolderOpen = false">取消</button>
+        <button type="submit" class="btn-primary">创建文件夹</button>
+      </div>
+    </form>
   </div>
 
   <!-- ===== Context menu ===== -->
@@ -317,22 +406,28 @@
        :style="ctxMenuStyle()"
        @click.outside="ctxMenu.open = false"
        style="display:none;">
-    <button class="ctx-menu-item" @click="ctxMenuAction('rename')">
+    <button class="ctx-menu-item"
+            x-show="ctxMenu.nodeType === 'folder'"
+            @click="ctxMenuAction('add-doc')">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
            stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 2l3 3-6 6H2V8l6-6z"/>
+        <path d="M3.5 1.8h4.2l2.3 2.3v7.1H3.5z"/>
+        <path d="M7.7 1.8v2.3H10"/>
+        <path d="M5.2 6.5h3.1M5.2 8.4h2.2"/>
       </svg>
-      重命名
+      新建子文件
     </button>
-    <button class="ctx-menu-item" @click="ctxMenuAction('add-child')">
+    <button class="ctx-menu-item"
+            x-show="ctxMenu.nodeType === 'folder'"
+            @click="ctxMenuAction('add-folder')">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
-           stroke-width="1.4" stroke-linecap="round">
-        <line x1="6.5" y1="2" x2="6.5" y2="11"/>
-        <line x1="2" y1="6.5" x2="11" y2="6.5"/>
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1.8 4.5v5.7a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1V5.4a1 1 0 0 0-1-1H6.8L5.6 3.2A1 1 0 0 0 4.9 3H2.8a1 1 0 0 0-1 1.5z"/>
+        <path d="M6.5 6.2v3M5 7.7h3"/>
       </svg>
-      新增子节点
+      新建子文件夹
     </button>
-    <div class="ctx-menu-sep"></div>
+    <div class="ctx-menu-sep" x-show="ctxMenu.nodeType === 'folder'"></div>
     <button class="ctx-menu-item ctx-menu-item--danger" @click="ctxMenuAction('delete')">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
            stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
@@ -362,8 +457,17 @@
         _searchTimer: null,
 
         newDocOpen: false,
+        newDocParentId: '',
+        newDocParentTitle: '',
+        newFolderOpen: false,
+        newFolderParentId: '',
+        newFolderParentTitle: '',
+        selectedNodeId: '',
+        selectedNodeType: '',
+        selectedNodeTitle: '',
+        treeFolded: false,
         sidebarCollapsed: false,
-        ctxMenu: { open: false, x: 0, y: 0, nodeId: null },
+        ctxMenu: { open: false, x: 0, y: 0, nodeId: null, nodeTitle: '', nodeType: '' },
 
         // ── 搜索 ──────────────────────────────────────────────────
         closeSearch() {
@@ -438,6 +542,65 @@
           window.location.href = item.url;
         },
 
+        currentFolderTarget() {
+          if (!this.selectedNodeId) {
+            return { id: '', title: '' };
+          }
+          if (this.selectedNodeType !== 'folder') {
+            showToast('只能在文件夹中创建', true);
+            return null;
+          }
+          return { id: this.selectedNodeId, title: this.selectedNodeTitle };
+        },
+
+        openNewDoc(parentId, parentTitle) {
+          const target = parentId !== undefined
+            ? { id: parentId || '', title: parentTitle || '' }
+            : this.currentFolderTarget();
+          if (!target) return;
+          this.newDocParentId = target.id;
+          this.newDocParentTitle = target.title;
+          this.newDocOpen = true;
+          this.$nextTick(() => this.$refs.newDocTitle?.focus());
+        },
+
+        openNewFolderForSelection() {
+          const target = this.currentFolderTarget();
+          if (!target) return;
+          this.openNewFolder(target.id, target.title);
+        },
+
+        openNewFolder(parentId, parentTitle) {
+          this.ctxMenu.open = false;
+          this.newFolderParentId = parentId || '';
+          this.newFolderParentTitle = parentTitle || '';
+          this.newFolderOpen = true;
+          this.$nextTick(() => this.$refs.newFolderTitle?.focus());
+        },
+
+        selectTreeRow(row) {
+          document.querySelectorAll('.tree-node-row.is-active').forEach((r) => {
+            r.classList.remove('is-active');
+          });
+          row.classList.add('is-active');
+          this.selectedNodeId = row.dataset.nodeId || '';
+          this.selectedNodeType = row.dataset.nodeType || '';
+          this.selectedNodeTitle = row.dataset.nodeTitle || '';
+        },
+
+        refreshTree() {
+          window.location.reload();
+        },
+
+        toggleTreeFold() {
+          const nodes = document.querySelectorAll('.tree-node');
+          this.treeFolded = !this.treeFolded;
+          nodes.forEach((node) => {
+            const hasChildren = node.querySelector(':scope > .tree-children');
+            if (hasChildren) node.classList.toggle('tree-node--collapsed', this.treeFolded);
+          });
+        },
+
         init() {
           // ⌘K / Ctrl+K
           document.addEventListener('keydown', (e) => {
@@ -449,6 +612,11 @@
             if (e.key === 'Escape') {
               if (this.searchOpen) { this.closeSearch(); return; }
               this.newDocOpen = false;
+              this.newDocParentId = '';
+              this.newDocParentTitle = '';
+              this.newFolderOpen = false;
+              this.newFolderParentId = '';
+              this.newFolderParentTitle = '';
               this.ctxMenu.open = false;
             }
           });
@@ -468,6 +636,28 @@
             });
           });
 
+          // 编辑按钮直接进入文档详情
+          document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.node-action--edit');
+            if (!btn) return;
+            const url = btn.dataset.docUrl;
+            if (url) window.location.href = url;
+          });
+
+          // 更多按钮打开目录操作菜单
+          document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.node-action--more');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            this.ctxMenu.open = true;
+            this.ctxMenu.x = e.clientX;
+            this.ctxMenu.y = e.clientY;
+            this.ctxMenu.nodeId = btn.dataset.id;
+            this.ctxMenu.nodeTitle = btn.dataset.nodeTitle || '';
+            this.ctxMenu.nodeType = btn.dataset.nodeType || '';
+          });
+
           // 树节点展开/收起
           document.addEventListener('click', (e) => {
             const btn = e.target.closest('.tree-toggle');
@@ -482,10 +672,12 @@
             if (!row || e.target.closest('.tree-toggle') || e.target.closest('.node-action')) {
               return;
             }
-            document.querySelectorAll('.tree-node-row.is-active').forEach((r) => {
-              r.classList.remove('is-active');
-            });
-            row.classList.add('is-active');
+            this.selectTreeRow(row);
+            if (row.dataset.nodeType === 'folder') {
+              const li = row.closest('.tree-node');
+              if (li) li.classList.toggle('tree-node--collapsed');
+              return;
+            }
             const url = row.dataset.docUrl;
             if (url) window.location.href = url;
           });
@@ -501,23 +693,45 @@
         ctxMenuStyle() {
           // Clamp context menu position to stay on screen
           const menuW = 172;
-          const menuH = 130;
+          const menuH = 96;
           const x = Math.min(this.ctxMenu.x, window.innerWidth - menuW - 8);
           const y = Math.min(this.ctxMenu.y, window.innerHeight - menuH - 8);
           return `top:${y}px; left:${x}px`;
         },
 
+        async deleteNode(nodeId, nodeTitle, nodeType) {
+          const kind = nodeType === 'folder' ? '文件夹' : '文档';
+          const ok = window.confirm(`确认删除${kind}「${nodeTitle || '未命名'}」？文件夹中的子项也会一并从目录隐藏。`);
+          if (!ok) return;
+
+          const res = await fetch(`/admin/tree/node/${nodeId}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfToken() },
+          });
+          if (!res.ok) {
+            showToast('删除失败，请稍后重试', true);
+            return;
+          }
+
+          const li = document.querySelector(`.tree-node[data-id="${nodeId}"]`);
+          if (li) li.remove();
+          showToast('已删除');
+          if (window.location.pathname.includes(nodeId)) {
+            window.location.href = '/admin/';
+          }
+        },
+
         ctxMenuAction(action) {
           const nodeId = this.ctxMenu.nodeId;
+          const nodeTitle = this.ctxMenu.nodeTitle;
+          const nodeType = this.ctxMenu.nodeType;
           this.ctxMenu.open = false;
-          if (action === 'rename') {
-            alert('重命名功能将在后续阶段实现（nodeId: ' + nodeId + ')');
-          } else if (action === 'add-child') {
-            alert('新增子节点功能将在后续阶段实现（parentId: ' + nodeId + ')');
+          if (action === 'add-doc') {
+            this.openNewDoc(nodeId, nodeTitle);
+          } else if (action === 'add-folder') {
+            this.openNewFolder(nodeId, nodeTitle);
           } else if (action === 'delete') {
-            if (confirm('确认删除此文档？（当前仅为占位确认）')) {
-              alert('删除功能将在后续阶段实现');
-            }
+            this.deleteNode(nodeId, nodeTitle, nodeType);
           }
         },
       };
@@ -535,7 +749,7 @@
       lists.forEach((list) => {
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         Sortable.create(list, {
-          group: 'docsite-tree',
+          group: 'atlas-tree',
           animation: reducedMotion ? 0 : 150,
           ghostClass: 'tree-ghost',
           dragClass: 'sortable-drag',

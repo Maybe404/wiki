@@ -41,8 +41,22 @@ def build_published_tree() -> list[dict]:
     """
     qs = (
         Document.get_tree()
-        .filter(status=Document.Status.PUBLISHED, is_deleted=False)
-        .only("id", "title", "slug", "status", "path", "depth")
+        .filter(
+            node_type=Document.NodeType.DOCUMENT,
+            status=Document.Status.PUBLISHED,
+            is_deleted=False,
+        )
+        .only(
+            "id",
+            "title",
+            "slug",
+            "node_type",
+            "status",
+            "path",
+            "depth",
+            "updated_at",
+            "published_at",
+        )
     )
     return build_nested_tree(qs)
 

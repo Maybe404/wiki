@@ -1,7 +1,7 @@
 {% extends "base_public.html" %}
 {% load doc_tree %}
 
-{% block title %}文档库 — Docsite{% endblock %}
+{% block title %}文档库 — Atlas{% endblock %}
 
 {% block nav_actions %}
   {% if user.is_authenticated %}
@@ -27,14 +27,29 @@
       <section id="hero" class="pub-section pub-section--hero">
         <p class="pub-eyebrow">文档库</p>
         <h1 class="pub-display">全部已发布文档</h1>
-        <p class="pub-lead">按时间排序的全部公开文档。左侧目录树展开按类别浏览，右侧是本页导航。</p>
+        <p class="pub-lead">所有可公开阅读的内容都收在这里。按目录进入文档，或直接搜索标题与正文。</p>
+        <div class="pub-cta-row">
+          <button type="button" class="pub-btn pub-btn--secondary" data-open-search>搜索文档</button>
+        </div>
+      </section>
+
+      <section id="catalog" class="pub-section">
+        <header class="pub-section-head">
+          <h2>目录总览</h2>
+          <span class="pub-section-meta">共 {{ total_count }} 篇</span>
+        </header>
+        {% if tree_data %}
+          {% render_public_catalog tree_data %}
+        {% else %}
+          <p class="pub-empty-hint">还没有任何已发布的文档。</p>
+        {% endif %}
       </section>
 
       {% if recent %}
       <section id="recent" class="pub-section">
         <header class="pub-section-head">
           <h2>最近发布</h2>
-          <span class="pub-section-meta">共 {{ total_count }} 篇</span>
+          <span class="pub-section-meta">最新 6 篇</span>
         </header>
         <ul class="pub-doc-list">
           {% for doc in recent %}
@@ -55,33 +70,11 @@
       </section>
       {% endif %}
 
-      <section id="all" class="pub-section">
-        <header class="pub-section-head">
-          <h2>全部文档</h2>
-        </header>
-        {% if all_published %}
-        <ul class="pub-doc-list pub-doc-list--dense">
-          {% for doc in all_published %}
-            <li class="pub-doc-item">
-              <a class="pub-doc-link" href="/d/{{ doc.slug }}/">
-                <span class="pub-doc-title">{{ doc.title }}</span>
-                <span class="pub-doc-meta">
-                  {{ doc.updated_at|date:"Y-m-d" }}
-                </span>
-              </a>
-            </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-          <p class="pub-empty-hint">还没有任何已发布的文档。</p>
-        {% endif %}
-      </section>
-
     </article>
   </main>
 
   <aside class="pub-toc" aria-label="页内目录">
-    <p class="pub-toc-title">On this page</p>
+    <p class="pub-toc-title">本页目录</p>
     <nav>
       {% for item in toc_items %}
         <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>

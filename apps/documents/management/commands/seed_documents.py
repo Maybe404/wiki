@@ -76,6 +76,7 @@ class Command(BaseCommand):
         doc = Document.add_root(
             title=data["title"],
             slug=data["slug"],
+            node_type=Document.NodeType.DOCUMENT,
             status=data["status"],
             owner=user,
             published_at=timezone.now() if data["status"] == "published" else None,
@@ -93,6 +94,7 @@ class Command(BaseCommand):
         doc = parent.add_child(
             title=data["title"],
             slug=data["slug"],
+            node_type=Document.NodeType.DOCUMENT,
             status=data["status"],
             owner=user,
             published_at=timezone.now() if data["status"] == "published" else None,
