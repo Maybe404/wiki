@@ -543,6 +543,8 @@
   padding: 20px;
 }
 
+.modal-overlay[hidden] { display: none; }
+
 .modal {
   width: 480px;
   max-width: 100%;
