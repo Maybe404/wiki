@@ -1,0 +1,155 @@
+{% extends "admin_ui/base_admin.html" %}
+{% load doc_tree %}
+
+{% block title %}用户管理{% endblock %}
+
+{% block sidebar_tree %}
+{% csrf_token %}
+{% render_admin_tree tree_data %}
+{% endblock %}
+
+{% block main_content %}
+<div class="admin-content-full" x-data="{ createOpen: false }">
+  <div class="admin-content-header">
+    <div class="admin-content-header-left">
+      <h1 class="admin-content-title">用户管理</h1>
+      <p class="admin-content-desc">管理用户账号、管理员权限与工作空间成员。</p>
+    </div>
+    <div class="admin-content-header-actions">
+      <a href="{% url 'admin_dashboard' %}" class="btn-secondary">返回工作区</a>
+      <button type="button" class="btn-primary" @click="createOpen = true">新建用户</button>
+    </div>
+  </div>
+
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>用户</th>
+        <th>角色</th>
+        <th>状态</th>
+        <th>所属工作空间</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>
+          <div class="user-cell">
+            <span class="user-cell-avatar">{{ row.user.username|slice:":2"|upper }}</span>
+            <span class="user-cell-name">{{ row.user.username }}</span>
+          </div>
+        </td>
+        <td><span class="user-role">{{ row.role }}</span></td>
+        <td>
+          {% if row.user.is_active %}
+            <span class="user-badge user-badge--active">启用</span>
+          {% else %}
+            <span class="user-badge user-badge--inactive">停用</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="user-ws-list">
+            {% for m in row.memberships %}
+            <span class="user-ws-tag">
+              {{ m.workspace.name }}{% if m.can_edit %} · 可编辑{% else %} · 只读{% endif %}
+              <form method="post" action="{% url 'user_update' row.user.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="remove_member">
+                <input type="hidden" name="workspace_id" value="{{ m.workspace.id }}">
+                <button type="submit" class="user-ws-remove" title="移出空间" aria-label="移出空间">×</button>
+              </form>
+            </span>
+            {% empty %}
+            <span class="user-ws-empty">未加入任何空间</span>
+            {% endfor %}
+          </div>
+          {% if workspaces %}
+          <form method="post" action="{% url 'user_update' row.user.pk %}" class="user-ws-add">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_member">
+            <select name="workspace_id" class="user-mini-select" required>
+              <option value="">加入空间…</option>
+              {% for ws in workspaces %}
+                <option value="{{ ws.id }}">{{ ws.name }}</option>
+              {% endfor %}
+            </select>
+            <label class="user-mini-check">
+              <input type="checkbox" name="can_edit" checked> 可编辑
+            </label>
+            <button type="submit" class="user-mini-btn">添加</button>
+          </form>
+          {% endif %}
+        </td>
+        <td>
+          <div class="user-actions">
+            {% if not row.user.is_superuser and row.user.pk != request.user.pk %}
+            <form method="post" action="{% url 'user_update' row.user.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_staff">
+              <button type="submit" class="user-mini-btn">
+                {% if row.user.is_staff %}取消管理员{% else %}设为管理员{% endif %}
+              </button>
+            </form>
+            {% endif %}
+            {% if row.user.pk != request.user.pk %}
+            <form method="post" action="{% url 'user_update' row.user.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_active">
+              <button type="submit" class="user-mini-btn">
+                {% if row.user.is_active %}停用{% else %}启用{% endif %}
+              </button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'user_update' row.user.pk %}"
+                  onsubmit="return resetPassword(this);">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="set_password">
+              <input type="hidden" name="password" value="">
+              <button type="submit" class="user-mini-btn">重置密码</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- 新建用户弹窗 -->
+  <div class="modal-overlay" x-show="createOpen" @click.self="createOpen = false"
+       style="display:none;" aria-modal="true" role="dialog">
+    <form class="modal" method="post" action="{% url 'user_create' %}">
+      {% csrf_token %}
+      <h2 class="modal-title">新建用户</h2>
+      <div class="modal-field">
+        <label class="modal-label" for="new-user-name">用户名</label>
+        <input class="modal-input" id="new-user-name" name="username" type="text"
+               autocomplete="off" required>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="new-user-pwd">初始密码</label>
+        <input class="modal-input" id="new-user-pwd" name="password" type="text"
+               autocomplete="new-password" required>
+      </div>
+      <div class="modal-field">
+        <label class="user-mini-check">
+          <input type="checkbox" name="is_staff"> 设为管理员（可管理空间与用户）
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" @click="createOpen = false">取消</button>
+        <button type="submit" class="btn-primary">创建用户</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function resetPassword(form) {
+    const pwd = window.prompt('为该用户设置新密码：');
+    if (!pwd) return false;
+    form.querySelector('input[name=password]').value = pwd;
+    return true;
+  }
+</script>
+{% endblock %}

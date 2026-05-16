@@ -328,6 +328,56 @@ def tree_node_delete(request: HttpRequest, pk: uuid.UUID) -> JsonResponse:
 
 
 @login_required
+@require_POST
+def node_move(request: HttpRequest, pk: uuid.UUID) -> JsonResponse:
+    """POST /admin/tree/node/<pk>/move/ — 把节点移动到指定文件夹（或根级）。
+
+    与 tree_reorder 不同：这是「右键菜单 → 移动」走的显式确认路径，
+    会同步更新节点及其子树的 workspace，确保移动后路径稳定持久。
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "invalid payload"}, status=400)
+
+    node = get_object_or_404(Document, pk=pk, is_deleted=False)
+    parent_id = str(data.get("parent_id") or "").strip()
+
+    parent: Document | None = None
+    if parent_id:
+        parent = get_object_or_404(Document, pk=parent_id, is_deleted=False)
+        if parent.node_type != Document.NodeType.FOLDER:
+            return JsonResponse({"error": "目标必须是文件夹"}, status=400)
+        if parent.pk == node.pk or parent.is_descendant_of(node):
+            return JsonResponse({"error": "不能移动到自身或其子目录"}, status=400)
+
+    try:
+        if parent is not None:
+            node.move(parent, "sorted-child")
+        else:
+            first_root = Document.get_first_root_node()
+            if first_root is not None and first_root.pk != node.pk:
+                node.move(first_root, "sorted-sibling")
+    except Exception as exc:  # noqa: BLE001
+        return JsonResponse({"error": str(exc)}, status=500)
+
+    # 同步 workspace：节点及其子树归到目标父级所在空间
+    node.refresh_from_db()
+    target_ws_id = parent.workspace_id if parent is not None else node.workspace_id
+    ids = [node.pk, *(c.pk for c in node.get_descendants())]
+    Document.objects.filter(pk__in=ids).update(workspace_id=target_ws_id, updated_at=timezone.now())
+
+    AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
+        actor=request.user,  # ty: ignore[unresolved-attribute]
+        action=AuditLog.Action.UPDATE,
+        target_type=node.node_type,
+        target_id=str(node.pk),
+        payload={"action": "move", "parent_id": parent_id or None},
+    )
+    return JsonResponse({"ok": True})
+
+
+@login_required
 def search_api(request: HttpRequest) -> JsonResponse:
     """GET /admin/search?q=xxx — FTS5 全文搜索，返回分组 JSON。"""
     q = request.GET.get("q", "").strip()

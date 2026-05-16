@@ -166,12 +166,6 @@
           </svg>
           <span>返回首页</span>
         </a>
-        <div class="sidebar-user">
-          <div class="sidebar-user-avatar">
-            {{ request.user.username|slice:":2"|upper }}
-          </div>
-          <span class="sidebar-user-name">{{ request.user.username }}</span>
-        </div>
         <button class="search-trigger" @click="searchOpen = true" aria-label="搜索文档（⌘K）">
           <span>搜索文档…</span>
           <kbd>⌘K</kbd>
@@ -230,21 +224,62 @@
       </div>
 
       <!-- Workspace switcher -->
-      {% if current_workspace %}
-      <div class="sidebar-workspace">
-        <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-back" title="所有工作区">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor"
+      <div class="sidebar-workspace" x-data="{ wsOpen: false }">
+        <button type="button" class="sidebar-workspace-btn" @click="wsOpen = !wsOpen"
+                :aria-expanded="wsOpen" title="切换工作空间">
+          <svg class="sidebar-workspace-chevron" :class="{'is-open': wsOpen}"
+               width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor"
                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="7 9 3 5.5 7 2"/>
+            <polyline points="2.5 4 5.5 7.5 8.5 4"/>
           </svg>
-        </a>
-        <span class="sidebar-workspace-name">{{ current_workspace.name }}</span>
+          <span class="sidebar-workspace-name">
+            {% if current_workspace %}{{ current_workspace.name }}{% else %}所有工作空间{% endif %}
+          </span>
+        </button>
+        <div class="sidebar-workspace-menu" x-show="wsOpen" @click.outside="wsOpen = false"
+             x-transition style="display:none;">
+          <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-item">
+            <span>全部工作空间</span>
+          </a>
+          {% for ws in sidebar_workspaces %}
+            <a href="{% url 'workspace_home' ws.slug %}"
+               class="sidebar-workspace-item{% if current_workspace and current_workspace.slug == ws.slug %} is-active{% endif %}">
+              <span>{{ ws.name }}</span>
+            </a>
+          {% endfor %}
+        </div>
       </div>
-      {% endif %}
 
       <!-- Tree -->
       <div class="sidebar-tree-wrap">
         {% block sidebar_tree %}{% endblock %}
+      </div>
+
+      <!-- Footer: user + actions -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar">{{ request.user.username|slice:":2"|upper }}</div>
+          <span class="sidebar-user-name">{{ request.user.username }}</span>
+        </div>
+        <div class="sidebar-footer-actions">
+          {% if request.user.is_staff or request.user.is_superuser %}
+          <a href="{% url 'user_list' %}" class="sidebar-footer-btn" title="用户管理" aria-label="用户管理">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="7" cy="4.5" r="2.3"/>
+              <path d="M2.5 11.5c0-2.2 2-3.6 4.5-3.6s4.5 1.4 4.5 3.6"/>
+            </svg>
+          </a>
+          {% endif %}
+          <a href="{% url 'logout' %}" class="sidebar-footer-btn" title="退出登录" aria-label="退出登录">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5.5 12H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h2.5"/>
+              <path d="M8.5 9.5L11.5 7 8.5 4.5"/>
+              <path d="M11.5 7H5.5"/>
+            </svg>
+          </a>
+        </div>
       </div>
 
     </aside>
@@ -419,6 +454,31 @@
     </form>
   </div>
 
+  <!-- ===== Move doc modal ===== -->
+  <div class="modal-overlay"
+       x-show="moveOpen"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       @click.self="moveOpen = false"
+       style="display:none;"
+       aria-modal="true"
+       role="dialog"
+       aria-labelledby="move-doc-title">
+    <div class="modal">
+      <h2 class="modal-title" id="move-doc-title">移动到…</h2>
+      <p class="modal-hint">将「<span x-text="moveNodeTitle"></span>」移动到选定目录。</p>
+      <div class="modal-field">
+        <label class="modal-label" for="move-doc-parent-input">目标目录</label>
+        {% include "admin_ui/_folder_select.html" with field_id="move-doc-parent-input" class_name="modal-input" x_model="moveParentId" %}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" @click="moveOpen = false">取消</button>
+        <button type="button" class="btn-primary" @click="confirmMove()">确认移动</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Context menu ===== -->
   <div class="ctx-menu"
        x-show="ctxMenu.open"
@@ -446,7 +506,25 @@
       </svg>
       新建子文件夹
     </button>
-    <div class="ctx-menu-sep" x-show="ctxMenu.nodeType === 'folder'"></div>
+    <button class="ctx-menu-item"
+            x-show="ctxMenu.nodeType === 'document'"
+            @click="ctxMenuAction('copy')">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4.2" y="4.2" width="6.6" height="6.6" rx="1"/>
+        <path d="M2.2 8.8V3.2a1 1 0 0 1 1-1h5.6"/>
+      </svg>
+      复制
+    </button>
+    <button class="ctx-menu-item" @click="ctxMenuAction('move')">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1.8 4V10a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1V5.4a1 1 0 0 0-1-1H6.5L5.3 3.2A1 1 0 0 0 4.6 3H2.8a1 1 0 0 0-1 1z"/>
+        <path d="M6.5 9V6M5 7.5h3"/>
+      </svg>
+      移动到…
+    </button>
+    <div class="ctx-menu-sep"></div>
     <button class="ctx-menu-item ctx-menu-item--danger" @click="ctxMenuAction('delete')">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
            stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
@@ -457,6 +535,15 @@
       删除
     </button>
   </div>
+
+  <!-- Django messages → toast -->
+  {% if messages %}
+  <div id="django-messages" hidden>
+    {% for message in messages %}
+    <span data-level="{{ message.tags }}">{{ message }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -479,6 +566,10 @@
         newDocParentId: '',
         newFolderOpen: false,
         newFolderParentId: '',
+        moveOpen: false,
+        moveParentId: '',
+        moveNodeId: '',
+        moveNodeTitle: '',
         selectedNodeId: '',
         selectedNodeType: '',
         selectedNodeTitle: '',
@@ -608,6 +699,14 @@
         },
 
         init() {
+          // Django messages → toast
+          const msgBox = document.getElementById('django-messages');
+          if (msgBox) {
+            msgBox.querySelectorAll('span').forEach((el, i) => {
+              setTimeout(() => showToast(el.textContent, el.dataset.level === 'error'), i * 150);
+            });
+          }
+
           // ⌘K / Ctrl+K
           document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -734,6 +833,63 @@
             this.openNewFolder(nodeId);
           } else if (action === 'delete') {
             this.deleteNode(nodeId, nodeTitle, nodeType);
+          } else if (action === 'copy') {
+            this.copyDoc(nodeId);
+          } else if (action === 'move') {
+            this.openMoveModal(nodeId, nodeTitle);
+          }
+        },
+
+        copyDoc(nodeId) {
+          // 复制是一个会重定向到新文档的 POST，用临时表单提交最稳妥
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/admin/doc/${nodeId}/copy/`;
+          const csrf = document.createElement('input');
+          csrf.type = 'hidden';
+          csrf.name = 'csrfmiddlewaretoken';
+          csrf.value = getCsrfToken();
+          form.appendChild(csrf);
+          document.body.appendChild(form);
+          form.submit();
+        },
+
+        openMoveModal(nodeId, nodeTitle) {
+          this.moveNodeId = nodeId;
+          this.moveNodeTitle = nodeTitle || '未命名';
+          this.moveParentId = '';
+          this.moveOpen = true;
+        },
+
+        async confirmMove() {
+          const ok = await this._postMove(this.moveNodeId, this.moveParentId);
+          this.moveOpen = false;
+          if (ok) {
+            showToast('已移动');
+            setTimeout(() => window.location.reload(), 600);
+          }
+        },
+
+        async _postMove(nodeId, parentId) {
+          try {
+            const res = await fetch(`/admin/tree/node/${nodeId}/move/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+              },
+              body: JSON.stringify({ parent_id: parentId || '' }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              showToast(data.error || '移动失败', true);
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.error(e);
+            showToast('移动失败，请重试', true);
+            return false;
           }
         },
       };
@@ -761,38 +917,48 @@
             const nodeId = evt.item.dataset.id;
             if (!nodeId) return;
 
-            const destList = evt.to;
-            const newParentId = destList.dataset.parentId || '';
+            const oldParentId = (evt.from.dataset.parentId || '');
+            const newParentId = (evt.to.dataset.parentId || '');
 
-            const siblings = [...destList.children].filter(
-              (el) => el.classList.contains('tree-node')
-            );
-            const nodeIdx = siblings.indexOf(evt.item);
-            const prevSibling = nodeIdx > 0 ? siblings[nodeIdx - 1] : null;
-            const prevSiblingId = prevSibling ? (prevSibling.dataset.id || '') : '';
+            // 同一目录内只是排序（目录按标题自动排序，无需持久化）
+            if (oldParentId === newParentId) return;
 
-            fetch('/admin/tree/reorder', {
+            const nodeTitle = evt.item.dataset.nodeTitle || '此项';
+            const destNode = evt.to.closest('.tree-node');
+            const destName = destNode ? (destNode.dataset.nodeTitle || '目标目录') : '根目录';
+
+            // 拖动到新目录：确认后再持久化路径（bug #4）
+            if (!window.confirm(`将「${nodeTitle}」移动到「${destName}」？`)) {
+              window.location.reload();
+              return;
+            }
+
+            fetch(`/admin/tree/node/${nodeId}/move/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken(),
               },
-              body: JSON.stringify({
-                node_id: nodeId,
-                new_parent_id: newParentId,
-                prev_sibling_id: prevSiblingId,
-              }),
-            }).then((r) => {
+              body: JSON.stringify({ parent_id: newParentId }),
+            }).then(async (r) => {
+              const data = await r.json().catch(() => ({}));
               if (!r.ok) {
-                console.error('reorder failed', r.status);
+                showToast(data.error || '移动失败', true);
+                window.location.reload();
+                return;
               }
+              showToast(`已移动到「${destName}」`);
+              setTimeout(() => window.location.reload(), 600);
+            }).catch(() => {
+              showToast('移动失败，请重试', true);
+              window.location.reload();
             });
           },
         });
       });
     }
 
-    function showToast(msg) {
+    function showToast(msg, isError) {
       const s = getComputedStyle(document.documentElement);
       const t = document.createElement('div');
       t.textContent = msg;
@@ -800,7 +966,9 @@
         position: 'fixed',
         bottom: '24px',
         right: '24px',
-        background: s.getPropertyValue('--color-surface-dark').trim(),
+        background: isError
+          ? s.getPropertyValue('--color-danger').trim()
+          : s.getPropertyValue('--color-surface-dark').trim(),
         color: s.getPropertyValue('--color-ink-on-dark').trim(),
         borderRadius: s.getPropertyValue('--rounded-md').trim(),
         padding: '12px 16px',

@@ -9,29 +9,107 @@
 {% endblock %}
 
 {% block main_content %}
-<div class="admin-content-full">
+<div class="admin-content-full" x-data="dashboardApp()">
   <div class="admin-content-header">
     <div class="admin-content-header-left">
       <h1 class="admin-content-title">工作区</h1>
     </div>
+    {% if request.user.is_staff or request.user.is_superuser %}
+    <div class="admin-content-header-actions">
+      <a href="{% url 'user_list' %}" class="btn-secondary">用户管理</a>
+      <button type="button" class="btn-primary" @click="openCreate()">新建空间</button>
+    </div>
+    {% endif %}
   </div>
 
   {% if workspaces %}
     <div class="ws-card-grid">
       {% for ws in workspaces %}
-      <a href="{% url 'workspace_home' ws.slug %}" class="ws-card">
-        <p class="ws-card-name">{{ ws.name }}</p>
-        {% if ws.description %}
-          <p class="ws-card-desc">{{ ws.description }}</p>
+      <div class="ws-card">
+        <a href="{% url 'workspace_home' ws.slug %}" class="ws-card-main">
+          <p class="ws-card-name">{{ ws.name }}</p>
+          {% if ws.description %}
+            <p class="ws-card-desc">{{ ws.description }}</p>
+          {% endif %}
+        </a>
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <div class="ws-card-actions">
+          <button type="button" class="ws-card-action"
+                  @click="openEdit('{{ ws.slug }}', '{{ ws.name|escapejs }}', '{{ ws.description|escapejs }}')">
+            编辑
+          </button>
+          <form method="post" action="{% url 'workspace_delete' ws.slug %}"
+                onsubmit="return confirm('确认删除工作空间「{{ ws.name|escapejs }}」？空间下有文档时无法删除。');">
+            {% csrf_token %}
+            <button type="submit" class="ws-card-action ws-card-action--danger">删除</button>
+          </form>
+        </div>
         {% endif %}
-      </a>
+      </div>
       {% endfor %}
     </div>
   {% else %}
     <div class="admin-content-placeholder">
       <h2>暂无可访问的工作区</h2>
-      <p>请联系管理员将你加入工作区，或由管理员创建新工作区。</p>
+      {% if request.user.is_staff or request.user.is_superuser %}
+        <p>点击右上角「新建空间」创建第一个工作空间。</p>
+      {% else %}
+        <p>请联系管理员将你加入工作区，或由管理员创建新工作区。</p>
+      {% endif %}
     </div>
   {% endif %}
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+  <!-- 新建 / 编辑空间弹窗 -->
+  <div class="modal-overlay" x-show="formOpen" @click.self="formOpen = false"
+       style="display:none;" aria-modal="true" role="dialog">
+    <form class="modal" method="post" :action="formAction">
+      {% csrf_token %}
+      <h2 class="modal-title" x-text="editSlug ? '编辑工作空间' : '新建工作空间'"></h2>
+      <div class="modal-field">
+        <label class="modal-label" for="ws-name-input">空间名称</label>
+        <input class="modal-input" id="ws-name-input" name="name" type="text"
+               x-model="formName" maxlength="100" autocomplete="off" required>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="ws-desc-input">描述（可选）</label>
+        <input class="modal-input" id="ws-desc-input" name="description" type="text"
+               x-model="formDesc" autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" @click="formOpen = false">取消</button>
+        <button type="submit" class="btn-primary" x-text="editSlug ? '保存' : '创建'"></button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
 </div>
+
+<script>
+  function dashboardApp() {
+    return {
+      formOpen: false,
+      editSlug: '',
+      formName: '',
+      formDesc: '',
+      get formAction() {
+        return this.editSlug
+          ? `/admin/workspaces/${this.editSlug}/edit/`
+          : '/admin/workspaces/new/';
+      },
+      openCreate() {
+        this.editSlug = '';
+        this.formName = '';
+        this.formDesc = '';
+        this.formOpen = true;
+      },
+      openEdit(slug, name, desc) {
+        this.editSlug = slug;
+        this.formName = name;
+        this.formDesc = desc;
+        this.formOpen = true;
+      },
+    };
+  }
+</script>
 {% endblock %}

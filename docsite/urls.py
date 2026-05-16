@@ -1,7 +1,10 @@
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, register_converter
 
 from apps.core import views
+from apps.core.converters import UnicodeSlugConverter
+
+register_converter(UnicodeSlugConverter, "uslug")
 
 handler404 = "apps.core.views.custom_404"
 

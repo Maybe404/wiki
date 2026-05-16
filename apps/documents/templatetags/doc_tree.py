@@ -55,14 +55,18 @@ def _render_node(item: dict) -> str:
     node_type = escape(node.node_type)
     is_folder = node.node_type == node.NodeType.FOLDER
 
+    # 文件夹始终显示展开箭头并渲染子列表（即使为空），以便：
+    #   1) 下三角随时可点，符合常理（bug #3）
+    #   2) 空文件夹也是合法的拖放目标（bug #4）
+    show_toggle = is_folder or bool(children)
     toggle = (
-        f'<button class="tree-toggle" aria-label="展开/收起">{_ICON_CHEVRON}</button>'
-        if children
+        f'<button type="button" class="tree-toggle" aria-label="展开/收起">{_ICON_CHEVRON}</button>'
+        if show_toggle
         else '<span class="tree-toggle-placeholder"></span>'
     )
 
     children_html = ""
-    if children:
+    if is_folder or children:
         inner = "".join(_render_node(c) for c in children)
         children_html = (
             f'<ul class="tree-children sortable-list" data-parent-id="{node_id}">{inner}</ul>'
