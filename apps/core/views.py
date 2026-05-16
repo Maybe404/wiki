@@ -13,7 +13,8 @@ from apps.workspaces.permissions import can_access_workspace, can_read_document
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    """公开首页：系统介绍 + 特性展示（非文档列表）。"""
+    """公开首页：系统介绍 + 完整公开目录。"""
+    user = request.user  # ty: ignore[unresolved-attribute]
     toc_items = [
         {"id": "intro", "text": "概览"},
         {"id": "why-html", "text": "为什么不是 Markdown"},
@@ -21,7 +22,17 @@ def home(request: HttpRequest) -> HttpResponse:
         {"id": "workflow", "text": "团队工作流"},
         {"id": "start", "text": "开始阅读"},
     ]
-    return render(request, "landing.html", {"toc_items": toc_items})
+    return render(
+        request,
+        "landing.html",
+        {
+            "toc_items": toc_items,
+            "tree_data": build_published_tree(user),
+            "public_workspaces": workspace_queryset_for_user(user),
+            "current_public_workspace": None,
+            "route_name": "home",
+        },
+    )
 
 
 def docs_index(request: HttpRequest) -> HttpResponse:

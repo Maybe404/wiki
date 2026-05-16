@@ -1,5 +1,5 @@
 {% extends "base_public.html" %}
-{% load static %}
+{% load static doc_tree %}
 
 {% block title %}Atlas — 让团队文档值得被认真读{% endblock %}
 
@@ -12,7 +12,34 @@
 {% endblock %}
 
 {% block body %}
-<div class="pub-landing">
+<div class="pub-shell" data-public-shell>
+
+  <aside class="pub-sidebar" aria-label="文档目录">
+    <div class="pub-side-head">
+      <p class="pub-side-label">目录</p>
+      <button type="button" class="pub-sidebar-toggle" data-sidebar-toggle aria-label="收起目录" aria-expanded="true">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8.5 3.5L5 7l3.5 3.5"/>
+        </svg>
+        <span>收起</span>
+      </button>
+    </div>
+    <nav class="pub-side-section" aria-label="主要入口">
+      <a class="pub-side-link is-active" href="{% url 'home' %}">首页</a>
+      <a class="pub-side-link" href="{% url 'docs_index' %}">文档库</a>
+    </nav>
+    {% if public_workspaces %}
+      <p class="pub-side-label pub-side-label--sub">空间</p>
+      {% render_public_workspace_nav public_workspaces current_public_workspace %}
+    {% endif %}
+    <p class="pub-side-label pub-side-label--sub">当前目录</p>
+    {% if tree_data %}
+      {% render_public_tree tree_data "" %}
+    {% else %}
+      <p class="pub-side-empty">还没有已发布的文档。</p>
+    {% endif %}
+  </aside>
 
   <main class="pub-main">
     <article class="pub-article pub-article--landing">
