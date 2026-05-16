@@ -24,6 +24,7 @@
           <th>类型</th>
           <th>所有者</th>
           <th>删除时间</th>
+          <th>操作</th>
         </tr>
       </thead>
       <tbody>
@@ -33,6 +34,19 @@
           <td>{{ node.get_node_type_display }}</td>
           <td>{{ node.owner.username }}</td>
           <td>{{ node.deleted_at|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td>
+            <div class="trash-actions">
+              <form method="post" action="{% url 'admin_tree_node_restore' node.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary btn-xs">恢复</button>
+              </form>
+              <form method="post" action="{% url 'admin_tree_node_purge' node.pk %}"
+                    onsubmit="return confirm('永久删除「{{ node.title }}」？此操作无法撤销。')">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger btn-xs">永久删除</button>
+              </form>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

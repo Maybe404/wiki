@@ -758,6 +758,13 @@
 
 .btn-danger:hover { background: #f5d8d7; }
 
+.btn-xs {
+  padding: 4px 10px;
+  font-size: var(--text-meta);
+  height: auto;
+  min-height: 0;
+}
+
 /* ===== Mobile ===== */
 @media (max-width: 1023px) {
   :root { --topbar-h: 64px; }
@@ -2356,6 +2363,13 @@ details[open] .preview-chevron { transform: rotate(180deg); }
 /* ── Hidden helper ── */
 .hidden-field {
   display: none;
+}
+
+/* ===== Trash action row ===== */
+.trash-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ===== Admin content header (workspace pages, doc detail breadcrumbs) ===== */

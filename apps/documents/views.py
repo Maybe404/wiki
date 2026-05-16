@@ -13,7 +13,12 @@ from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 
 from apps.workspaces.models import Workspace
-from apps.workspaces.permissions import can_read_document, can_view_doc_in_admin
+from apps.workspaces.permissions import (
+    can_copy_document,
+    can_read_document,
+    can_view_doc_in_admin,
+    is_admin,
+)
 
 from .fts import search_documents
 from .models import AuditLog, Document, DocumentVersion, SlugAlias
@@ -330,3 +335,114 @@ def search_api(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"groups": []})
     result = search_documents(q)
     return JsonResponse(result)
+
+
+def _generate_copy_slug(original_slug: str) -> str:
+    base = f"{original_slug}-copy"
+    if not Document.objects.filter(slug=base, is_deleted=False).exists():
+        return base
+    for i in range(2, 20):
+        candidate = f"{original_slug}-copy-{i}"
+        if not Document.objects.filter(slug=candidate, is_deleted=False).exists():
+            return candidate
+    return f"{original_slug}-copy-{secrets.token_hex(3)}"
+
+
+@login_required
+@require_POST
+def doc_copy(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
+    """POST /admin/doc/<pk>/copy/ — 复制文档为草稿（同 workspace、同目录）。"""
+    doc = get_object_or_404(
+        Document.objects.select_related("workspace"),
+        pk=pk,
+        node_type=Document.NodeType.DOCUMENT,
+        is_deleted=False,
+    )
+    if not can_copy_document(request.user, doc):  # ty: ignore[unresolved-attribute]
+        raise Http404
+
+    version = _current_version(doc)
+    new_slug = _generate_copy_slug(doc.slug)
+    parent = doc.get_parent()
+
+    new_doc_kwargs = {
+        "title": f"{doc.title}（副本）",
+        "slug": new_slug,
+        "node_type": Document.NodeType.DOCUMENT,
+        "status": Document.Status.DRAFT,
+        "owner": request.user,  # ty: ignore[unresolved-attribute]
+        "workspace": doc.workspace,
+        "visibility": doc.visibility,
+    }
+
+    if parent is not None:
+        new_doc = parent.add_child(**new_doc_kwargs)
+    else:
+        new_doc = Document.add_root(**new_doc_kwargs)
+
+    if version:
+        DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
+            document=new_doc,
+            html=version.html,
+            editable_blocks=version.editable_blocks,
+            is_full_page=version.is_full_page,
+            author=request.user,  # ty: ignore[unresolved-attribute]
+            note=f"复制自「{doc.title}」",
+        )
+
+    AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
+        actor=request.user,  # ty: ignore[unresolved-attribute]
+        action=AuditLog.Action.CREATE,
+        target_type="document",
+        target_id=str(new_doc.pk),
+        payload={"source_id": str(doc.pk), "source_title": doc.title},
+    )
+
+    return redirect("admin_doc_detail", pk=new_doc.pk)
+
+
+@login_required
+@require_POST
+def tree_node_restore(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
+    """POST /admin/tree/node/<pk>/restore/ — 从回收站恢复（管理员）。"""
+    if not is_admin(request.user):  # ty: ignore[unresolved-attribute]
+        raise Http404
+
+    node = get_object_or_404(Document, pk=pk, is_deleted=True)
+    workspace = node.workspace
+    now = timezone.now()
+    Document.objects.filter(pk=node.pk).update(is_deleted=False, deleted_at=None, updated_at=now)
+    AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
+        actor=request.user,  # ty: ignore[unresolved-attribute]
+        action=AuditLog.Action.UPDATE,
+        target_type=node.node_type,
+        target_id=str(node.pk),
+        payload={"action": "restore", "title": node.title},
+    )
+    if workspace is not None:
+        return redirect("workspace_trash", workspace_slug=workspace.slug)
+    return redirect("admin_dashboard")
+
+
+@login_required
+@require_POST
+def tree_node_purge(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
+    """POST /admin/tree/node/<pk>/purge/ — 永久删除（管理员，不可恢复）。"""
+    if not is_admin(request.user):  # ty: ignore[unresolved-attribute]
+        raise Http404
+
+    node = get_object_or_404(Document, pk=pk, is_deleted=True)
+    workspace = node.workspace
+    title = node.title
+    node_type = node.node_type
+    AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
+        actor=request.user,  # ty: ignore[unresolved-attribute]
+        action=AuditLog.Action.DELETE,
+        target_type=node_type,
+        target_id=str(pk),
+        payload={"action": "purge", "title": title},
+    )
+    node.delete()
+    if workspace is not None:
+        return redirect("workspace_trash", workspace_slug=workspace.slug)
+    return redirect("admin_dashboard")

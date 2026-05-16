@@ -71,6 +71,33 @@ def can_view_doc_in_admin(user: object, doc: Document) -> bool:
     return can_access_workspace(user, doc.workspace)  # ty: ignore[invalid-argument-type]
 
 
+def can_edit_document(user: object, doc: Document) -> bool:
+    """用户是否有权编辑/复制此文档（can_edit=True 的 owner 或管理员）。"""
+    if is_admin(user):
+        return True
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if doc.workspace_id is None:  # ty: ignore[unresolved-attribute]
+        return False
+    try:
+        member = WorkspaceMember.objects.get(  # ty: ignore[unresolved-attribute]
+            workspace=doc.workspace,
+            user=user,
+        )
+        return bool(member.can_edit)
+    except WorkspaceMember.DoesNotExist:  # ty: ignore[unresolved-attribute]
+        return False
+
+
+def can_copy_document(user: object, doc: Document) -> bool:
+    """owner 且 can_edit，或管理员。"""
+    if is_admin(user):
+        return True
+    return (
+        can_edit_document(user, doc) and doc.owner_id == getattr(user, "pk", None)  # ty: ignore[unresolved-attribute]
+    )
+
+
 def require_workspace_access(user: object, workspace: Workspace) -> None:
     """若用户无权访问 workspace，raise Http404（不泄露存在性）。"""
     if not can_access_workspace(user, workspace):
