@@ -1,6 +1,19 @@
 (function () {
   'use strict';
 
+  // ── Left sidebar collapse ──────────────────────────────────────────────
+  document.querySelectorAll('[data-public-shell]').forEach((shell) => {
+    const toggle = shell.querySelector('[data-sidebar-toggle]');
+    if (!toggle) return;
+    const label = toggle.querySelector('span');
+    toggle.addEventListener('click', () => {
+      const collapsed = shell.classList.toggle('pub-shell--sidebar-collapsed');
+      toggle.setAttribute('aria-label', collapsed ? '展开目录' : '收起目录');
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      if (label) label.textContent = collapsed ? '展开' : '收起';
+    });
+  });
+
   // ── TOC scroll-spy ──────────────────────────────────────────────────────
   const tocLinks = Array.from(document.querySelectorAll('.pub-toc-link'));
   if (tocLinks.length) {

@@ -4,6 +4,10 @@ import re
 import unicodedata
 
 from bs4 import BeautifulSoup
+from django.db.models import Q
+
+from apps.workspaces.models import Workspace
+from apps.workspaces.permissions import is_admin
 
 from .models import Document
 
@@ -43,33 +47,87 @@ def folder_options_for_user(request) -> dict:
     qs = (
         Document.get_tree()
         .filter(is_deleted=False, node_type=Document.NodeType.FOLDER)
-        .only("id", "title", "depth")
+        .select_related("workspace")
+        .only("id", "title", "depth", "workspace_id", "workspace__name")
     )
-    return {
-        "folder_options": [
+    stack: list[tuple[int, str]] = []
+    options = []
+    for f in qs:
+        while stack and stack[-1][0] >= f.depth:
+            stack.pop()
+        parts = [title for _, title in stack] + [f.title]
+        if f.workspace_id:
+            parts.insert(0, f.workspace.name)
+        options.append(
             {
                 "id": str(f.pk),
-                "title": f.title,
-                # MP_Node depth 是 1-based 根，转成相对缩进层级；用全角空格做视觉缩进
-                "indent": "　" * max(0, f.depth - 1),
+                "title": " / ".join(parts),
+                "indent": "",
             }
-            for f in qs
-        ]
-    }
+        )
+        stack.append((f.depth, f.title))
+    return {"folder_options": options}
 
 
-def build_published_tree() -> list[dict]:
-    """公开端目录树：只含已发布且未软删除的节点。
-
-    若已发布节点的祖先为草稿/归档，节点会被提升为根级（弱化层级而不丢节点）。
-    """
-    qs = (
-        Document.get_tree()
-        .filter(
+def workspace_queryset_for_user(user) -> list[Workspace]:
+    """Return workspaces the current user may see in navigation."""
+    objects = Workspace.objects.filter(is_deleted=False)  # ty: ignore[unresolved-attribute]
+    if is_admin(user):
+        return list(objects.order_by("name"))
+    link_shared_workspace_ids = (
+        Document.objects.filter(
+            is_deleted=False,
             node_type=Document.NodeType.DOCUMENT,
             status=Document.Status.PUBLISHED,
-            is_deleted=False,
+            visibility=Document.Visibility.LINK_SHARED,
+            workspace__isnull=False,
         )
+        .values_list("workspace_id", flat=True)
+        .distinct()
+    )
+    if getattr(user, "is_authenticated", False):
+        return list(
+            objects.filter(Q(members__user=user) | Q(id__in=link_shared_workspace_ids))
+            .distinct()
+            .order_by("name")
+        )
+    return list(objects.filter(id__in=link_shared_workspace_ids).order_by("name"))
+
+
+def published_documents_for_user(user, workspace: Workspace | None = None):
+    """Published document queryset filtered by the visibility matrix."""
+    qs = Document.objects.filter(
+        is_deleted=False,
+        node_type=Document.NodeType.DOCUMENT,
+        status=Document.Status.PUBLISHED,
+    ).select_related("workspace", "owner")
+    if workspace is not None:
+        qs = qs.filter(workspace=workspace)
+
+    if is_admin(user):
+        return qs
+    if getattr(user, "is_authenticated", False):
+        member_workspace_ids = Workspace.objects.filter(  # ty: ignore[unresolved-attribute]
+            members__user=user,
+            is_deleted=False,
+        ).values_list("id", flat=True)
+        return qs.filter(
+            Q(visibility=Document.Visibility.LINK_SHARED)
+            | Q(visibility=Document.Visibility.WORKSPACE, workspace_id__in=member_workspace_ids)
+            | Q(visibility=Document.Visibility.PRIVATE, owner=user)
+        )
+    return qs.filter(visibility=Document.Visibility.LINK_SHARED)
+
+
+def build_published_tree(user=None, workspace: Workspace | None = None) -> list[dict]:
+    """公开端目录树：只含当前用户可阅读的已发布文档及其可见祖先目录。"""
+    visible_docs = published_documents_for_user(user, workspace)
+    visible_doc_ids = set(visible_docs.values_list("pk", flat=True))
+
+    all_nodes = (
+        Document.get_tree()
+        .filter(is_deleted=False)
+        .select_related("workspace")
         .only(
             "id",
             "title",
@@ -80,9 +138,55 @@ def build_published_tree() -> list[dict]:
             "depth",
             "updated_at",
             "published_at",
+            "workspace_id",
         )
     )
-    return build_nested_tree(qs)
+    if workspace is not None:
+        all_nodes = all_nodes.filter(workspace=workspace)
+    elif not is_admin(user):
+        workspace_ids = [ws.pk for ws in workspace_queryset_for_user(user)]
+        all_nodes = all_nodes.filter(workspace_id__in=workspace_ids)
+
+    def prune(items: list[dict]) -> list[dict]:
+        pruned = []
+        for item in items:
+            node = item["node"]
+            children = prune(item.get("children", []))
+            is_visible_doc = (
+                node.node_type == Document.NodeType.DOCUMENT and node.pk in visible_doc_ids
+            )
+            if is_visible_doc or children:
+                pruned.append({"node": node, "children": children})
+        return pruned
+
+    return prune(build_nested_tree(all_nodes))
+
+
+def build_admin_workspace_tree(user, current_workspace: Workspace | None = None) -> list[dict]:
+    """Sidebar tree grouped as 全部空间 / <workspace> / folders and docs."""
+    workspaces = workspace_queryset_for_user(user)
+    if current_workspace is not None:
+        workspaces = [ws for ws in workspaces if ws.pk == current_workspace.pk]
+
+    workspace_items = []
+    for ws in workspaces:
+        qs = Document.get_tree().filter(workspace=ws, is_deleted=False).select_related("workspace")
+        workspace_items.append(
+            {
+                "kind": "workspace",
+                "workspace": ws,
+                "children": build_nested_tree(qs),
+                "is_active": current_workspace is not None and ws.pk == current_workspace.pk,
+            }
+        )
+
+    return [
+        {
+            "kind": "all_workspaces",
+            "children": workspace_items,
+            "is_active": current_workspace is None,
+        }
+    ]
 
 
 # ── TOC 抽取 ───────────────────────────────────────────────────────────────

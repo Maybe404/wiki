@@ -1,5 +1,5 @@
 {% load static %}
-<div class="ws-tree-node ws-tree-node--{{ node.node.node_type }}" style="padding-left: {{ depth|add:0 }}rem;">
+<div class="ws-tree-node ws-tree-node--{{ node.node.node_type }}" id="node-{{ node.node.pk }}" style="padding-left: {{ depth|add:0 }}rem;">
   {% if node.node.node_type == 'folder' %}
     <span class="ws-tree-icon" aria-hidden="true">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
