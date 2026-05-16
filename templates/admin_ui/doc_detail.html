@@ -21,11 +21,7 @@
         {% endif %}
         {% for ancestor in breadcrumbs %}
         <span aria-hidden="true"> › </span>
-        {% if document.workspace %}
-          <a href="{% url 'workspace_home' document.workspace.slug %}#node-{{ ancestor.pk }}">{{ ancestor.title }}</a>
-        {% else %}
-          {{ ancestor.title }}
-        {% endif %}
+        {{ ancestor.title }}
         {% endfor %}
       </p>
       {% endif %}
@@ -35,6 +31,11 @@
       <h1 class="doc-header-title">{{ document.title }}</h1>
     </div>
     <div class="doc-header-actions">
+      {# V2 阶段 1：旧版本 diff 与行内编辑入口先隐藏，旧文件和 API 留到阶段 7 清理。 #}
+      <form method="post" action="{% url 'admin_doc_copy' document.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary" title="复制为草稿">复制</button>
+      </form>
       {% if document.status == 'draft' %}
       <button class="btn-primary" id="btn-publish"
               onclick="PublishManager.openPublishDrawer()">

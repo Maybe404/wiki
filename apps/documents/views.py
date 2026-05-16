@@ -2,7 +2,6 @@ import json
 import re
 import secrets
 import uuid
-from typing import cast
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
@@ -23,7 +22,7 @@ from apps.workspaces.permissions import (
 
 from .fts import search_documents
 from .models import AuditLog, Document, DocumentVersion, SlugAlias
-from .utils import build_admin_workspace_tree, build_published_tree, extract_toc
+from .utils import build_nested_tree, build_published_tree, extract_toc
 
 DOCUMENT_CONTENT_CSP = (
     "default-src 'none'; "
@@ -122,11 +121,7 @@ class DocumentDetailView(DetailView):
         ctx["content_html"] = content_html
         ctx["is_full_page"] = is_full_page
         ctx["toc_items"] = toc_items
-        user = self.request.user
-        workspace = cast(
-            Workspace | None, doc.workspace if getattr(doc, "workspace_id", None) else None
-        )
-        ctx["tree_data"] = build_published_tree(user, workspace)
+        ctx["tree_data"] = build_published_tree()
         return ctx
 
 
@@ -166,9 +161,13 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
     content_html = version.html if version else ""
     is_full_page = bool(version and version.is_full_page)
 
-    user = request.user  # ty: ignore[unresolved-attribute]
-    workspace = cast(Workspace | None, doc.workspace if doc.workspace_id else None)
-    tree_data = build_admin_workspace_tree(user, workspace)
+    # 侧边栏目录树：按 workspace 过滤
+    tree_qs = (
+        Document.get_tree().filter(workspace=doc.workspace, is_deleted=False)
+        if doc.workspace_id is not None
+        else Document.get_tree().filter(is_deleted=False)
+    )
+    tree_data = build_nested_tree(tree_qs)
 
     # 面包屑：取祖先中 node_type=folder 的节点
     breadcrumbs = list(doc.get_ancestors())

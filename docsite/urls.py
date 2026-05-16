@@ -11,7 +11,6 @@ handler404 = "apps.core.views.custom_404"
 urlpatterns = [
     path("", views.home, name="home"),
     path("docs/", views.docs_index, name="docs_index"),
-    path("docs/<uslug:workspace_slug>/", views.docs_workspace, name="docs_workspace"),
     path("search", views.public_search, name="public_search"),
     path("django-admin/", admin.site.urls),
     path("", include("apps.accounts.urls")),

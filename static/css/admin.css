@@ -164,20 +164,6 @@
   color: var(--color-ink);
 }
 
-.tree-node-row--synthetic .node-title,
-.tree-node-row--workspace .node-title {
-  color: var(--color-ink);
-  font-weight: 500;
-}
-
-.tree-node--space-root > .tree-children {
-  padding-left: 12px;
-}
-
-.tree-node--workspace > .tree-children {
-  padding-left: 18px;
-}
-
 .tree-node-row:hover .node-actions,
 .tree-node-row.is-active .node-actions {
   opacity: 1;

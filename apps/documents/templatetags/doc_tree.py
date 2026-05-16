@@ -13,6 +13,14 @@ _ICON_EDIT = (
     "</svg>"
 )
 
+_ICON_LINK = (
+    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" '
+    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M5.5 8.5a3 3 0 0 0 4.2.3l1.3-1.3a3 3 0 0 0-4.2-4.2l-.8.7"/>'
+    '<path d="M8.5 5.5a3 3 0 0 0-4.2-.3L3 6.5a3 3 0 0 0 4.2 4.2l.8-.7"/>'
+    "</svg>"
+)
+
 _ICON_MORE = (
     '<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">'
     '<circle cx="7" cy="3.5" r="1.1"/>'
@@ -37,55 +45,13 @@ _ICON_FOLDER = (
 )
 
 
-def _render_synthetic_node(item: dict) -> str:
-    kind = item.get("kind")
-    children: list = item.get("children", [])
-
-    if kind == "all_workspaces":
-        node_id = "all-workspaces"
-        title = "全部空间"
-        url = "/admin/"
-        node_type = "space-root"
-        row_class = "tree-node-row tree-node-row--folder tree-node-row--synthetic"
-        extra_class = " tree-node--space-root"
-    elif kind == "workspace":
-        workspace = item["workspace"]
-        node_id = f"workspace-{escape(str(workspace.pk))}"
-        title = escape(workspace.name)
-        url = f"/w/{escape(workspace.slug)}/"
-        node_type = "workspace"
-        row_class = "tree-node-row tree-node-row--folder tree-node-row--workspace"
-        extra_class = " tree-node--workspace"
-    else:
-        return ""
-
-    inner = "".join(
-        _render_synthetic_node(child) if child.get("kind") else _render_node(child)
-        for child in children
-    )
-    active_class = " is-active" if item.get("is_active") else ""
-
-    return (
-        f'<li class="tree-node tree-node--folder{extra_class}" data-id="{node_id}"'
-        f' data-node-type="{node_type}" data-node-title="{title}">'
-        f'<div class="{row_class}{active_class}" tabindex="0" role="treeitem"'
-        f' aria-label="{title}" data-node-type="{node_type}" data-node-id="{node_id}"'
-        f' data-node-title="{title}" data-doc-url="{url}">'
-        f'<button type="button" class="tree-toggle" aria-label="展开/收起">{_ICON_CHEVRON}</button>'
-        f'<span class="folder-mark" aria-hidden="true">{_ICON_FOLDER}</span>'
-        f'<span class="node-title">{title}</span>'
-        f"</div>"
-        f'<ul class="tree-children">{inner}</ul>'
-        f"</li>"
-    )
-
-
 def _render_node(item: dict) -> str:
     node = item["node"]
     children: list = item.get("children", [])
     node_id = escape(str(node.pk))
     status = escape(node.status)
     title = escape(node.title)
+    slug = escape(node.slug)
     node_type = escape(node.node_type)
     is_folder = node.node_type == node.NodeType.FOLDER
 
@@ -121,6 +87,15 @@ def _render_node(item: dict) -> str:
             f' data-doc-url="/admin/doc/{node_id}/">{_ICON_EDIT}</button>'
         )
     )
+    copy_button = (
+        ""
+        if is_folder
+        else (
+            '<button class="node-action node-action--copy" aria-label="复制链接" title="复制链接"'
+            f' data-slug="{slug}">{_ICON_LINK}</button>'
+        )
+    )
+
     return (
         f'<li class="tree-node tree-node--{node_type}" data-id="{node_id}"'
         f' data-node-type="{node_type}" data-node-title="{title}"'
@@ -136,6 +111,7 @@ def _render_node(item: dict) -> str:
         f'<span class="node-title">{title}</span>'
         f'<div class="node-actions">'
         f"{edit_button}"
+        f"{copy_button}"
         f'<button class="node-action node-action--more" aria-label="更多" title="更多"'
         f' data-id="{node_id}" data-node-type="{node_type}" data-node-title="{title}">'
         f"{_ICON_MORE}</button>"
@@ -149,14 +125,8 @@ def _render_node(item: dict) -> str:
 @register.simple_tag
 def render_admin_tree(tree_data: list) -> str:
     """渲染文档目录树为嵌套 HTML。接收 build_nested_tree() 的返回值。"""
-    inner = "".join(
-        _render_synthetic_node(item) if item.get("kind") else _render_node(item)
-        for item in tree_data
-    )
-    root_class = (
-        "tree-root" if any(item.get("kind") for item in tree_data) else "tree-root sortable-list"
-    )
-    return mark_safe(f'<ul class="{root_class}" data-parent-id="">{inner}</ul>')
+    inner = "".join(_render_node(item) for item in tree_data)
+    return mark_safe(f'<ul class="tree-root sortable-list" data-parent-id="">{inner}</ul>')
 
 
 # ---------- 公开端目录树（只读，无操作按钮，无状态点）----------
@@ -167,23 +137,12 @@ def _render_public_node(item: dict, active_slug: str) -> str:
     children: list = item.get("children", [])
     title = escape(node.title)
     slug = escape(node.slug)
-    is_folder = node.node_type == node.NodeType.FOLDER
-    is_active = " is-active" if not is_folder and str(node.slug) == active_slug else ""
+    is_active = " is-active" if str(node.slug) == active_slug else ""
 
     children_html = ""
     if children:
         inner = "".join(_render_public_node(c, active_slug) for c in children)
         children_html = f'<ul class="pub-tree-children">{inner}</ul>'
-
-    if is_folder:
-        return (
-            f'<li class="pub-tree-node pub-tree-node--folder">'
-            f'<span class="pub-side-link pub-side-link--folder">'
-            f"<span>{title}</span>"
-            f"</span>"
-            f"{children_html}"
-            f"</li>"
-        )
 
     return (
         f'<li class="pub-tree-node">'
@@ -202,26 +161,6 @@ def render_public_tree(tree_data: list, active_slug: str = "") -> str:
     return mark_safe(f'<ul class="pub-tree-root">{inner}</ul>')
 
 
-@register.simple_tag
-def render_public_workspace_nav(workspaces: list, current_workspace=None) -> str:
-    """渲染公开端可访问空间导航。"""
-    rows = []
-    for ws in workspaces:
-        active = (
-            " is-active"
-            if current_workspace is not None and str(ws.pk) == str(current_workspace.pk)
-            else ""
-        )
-        rows.append(
-            f'<li class="pub-tree-node">'
-            f'<a class="pub-side-link{active}" href="/docs/{escape(ws.slug)}/">'
-            f"<span>{escape(ws.name)}</span>"
-            f"</a>"
-            f"</li>"
-        )
-    return mark_safe(f'<ul class="pub-tree-root pub-tree-root--spaces">{"".join(rows)}</ul>')
-
-
 def _format_public_date(node) -> str:
     dt = node.published_at or node.updated_at
     if not dt:
@@ -234,7 +173,6 @@ def _render_public_catalog_node(item: dict, index: int) -> str:
     children: list = item.get("children", [])
     title = escape(node.title)
     slug = escape(node.slug)
-    is_folder = node.node_type == node.NodeType.FOLDER
     date_label = escape(_format_public_date(node))
     number = f"{index:02d}"
 
@@ -245,25 +183,20 @@ def _render_public_catalog_node(item: dict, index: int) -> str:
         )
         children_html = f'<ol class="pub-catalog-children">{inner}</ol>'
 
-    meta = (
-        f'<span class="pub-catalog-meta">发布于 {date_label}</span>'
-        if date_label and not is_folder
-        else ""
+    meta = f'<span class="pub-catalog-meta">发布于 {date_label}</span>' if date_label else ""
+    child_count = (
+        f'<span class="pub-catalog-count">{len(children)} 个子文档</span>' if children else ""
     )
-    child_count = f'<span class="pub-catalog-count">{len(children)} 项</span>' if children else ""
-    tag = "div" if is_folder else "a"
-    href = "" if is_folder else f' href="/d/{slug}/"'
-    folder_class = " pub-catalog-link--folder" if is_folder else ""
 
     return (
         '<li class="pub-catalog-node">'
-        f'<{tag} class="pub-catalog-link{folder_class}"{href}>'
+        f'<a class="pub-catalog-link" href="/d/{slug}/">'
         f'<span class="pub-catalog-index">{number}</span>'
         '<span class="pub-catalog-copy">'
         f'<span class="pub-catalog-title">{title}</span>'
         f'<span class="pub-catalog-row">{meta}{child_count}</span>'
         "</span>"
-        f"</{tag}>"
+        "</a>"
         f"{children_html}"
         "</li>"
     )

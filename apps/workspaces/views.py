@@ -8,7 +8,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from apps.documents.models import Document
-from apps.documents.utils import build_admin_workspace_tree, build_nested_tree
+from apps.documents.utils import build_nested_tree
 
 from .models import Workspace
 from .permissions import is_admin, require_workspace_access
@@ -34,8 +34,6 @@ def workspace_home(request: HttpRequest, workspace_slug: str) -> HttpResponse:
 
     qs = Document.get_tree().filter(workspace=ws, is_deleted=False).select_related("workspace")
     tree_data = build_nested_tree(qs)
-    user = request.user  # ty: ignore[unresolved-attribute]
-    sidebar_tree_data = build_admin_workspace_tree(user, ws)
 
     return render(
         request,
@@ -43,7 +41,6 @@ def workspace_home(request: HttpRequest, workspace_slug: str) -> HttpResponse:
         {
             "workspace": ws,
             "tree_data": tree_data,
-            "sidebar_tree_data": sidebar_tree_data,
             "current_workspace": ws,
         },
     )

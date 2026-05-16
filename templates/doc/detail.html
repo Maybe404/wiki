@@ -8,26 +8,10 @@
 {% endblock %}
 
 {% block body %}
-<div class="pub-shell{% if is_full_page %} pub-shell--reader-full{% endif %}" data-public-shell>
+<div class="pub-shell">
 
   <aside class="pub-sidebar" aria-label="文档目录">
-    <div class="pub-side-head">
-      <p class="pub-side-label">目录</p>
-      <button type="button" class="pub-sidebar-toggle" data-sidebar-toggle aria-label="收起目录">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M8.5 3.5L5 7l3.5 3.5"/>
-        </svg>
-        <span>收起</span>
-      </button>
-    </div>
-    <nav class="pub-side-section" aria-label="主要入口">
-      <a class="pub-side-link" href="{% url 'home' %}">首页</a>
-      <a class="pub-side-link" href="{% url 'docs_index' %}">文档库</a>
-    </nav>
-    <p class="pub-side-label pub-side-label--sub">
-      {% if document.workspace %}{{ document.workspace.name }}{% else %}文档目录{% endif %}
-    </p>
+    <p class="pub-side-label">文档目录</p>
     {% if tree_data %}
       {% render_public_tree tree_data document.slug %}
     {% else %}
@@ -36,7 +20,7 @@
   </aside>
 
   <main class="pub-main">
-    <article class="pub-article{% if is_full_page %} pub-article--fullpage{% endif %}">
+    <article class="pub-article">
 
       <header class="pub-doc-header" id="doc-top">
         <p class="pub-eyebrow">
@@ -73,6 +57,20 @@
 
     </article>
   </main>
+
+  <aside class="pub-toc" aria-label="页内目录">
+    <p class="pub-toc-title">本页目录</p>
+    <nav>
+      {% if toc_items %}
+        {% for item in toc_items %}
+          <a class="pub-toc-link pub-toc-link--lvl{{ item.level }}"
+             data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
+        {% endfor %}
+      {% else %}
+        <p class="pub-toc-empty">本文暂无小节</p>
+      {% endif %}
+    </nav>
+  </aside>
 
 </div>
 

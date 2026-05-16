@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.documents.fts import sync_fts_plain_text
 from apps.documents.models import AuditLog, Document, DocumentVersion
-from apps.documents.utils import build_admin_workspace_tree
+from apps.documents.utils import build_nested_tree
 from apps.workspaces.models import Workspace
 
 from .sanitizer import sanitize_inline
@@ -504,12 +504,8 @@ def _clean_import_html(
 @login_required
 def import_document_page(request: HttpRequest) -> HttpResponse:
     """GET /admin/import/ — 显示 AI HTML 导入页面。"""
-    user = request.user  # ty: ignore[unresolved-attribute]
-    return render(
-        request,
-        "admin_ui/import.html",
-        {"tree_data": build_admin_workspace_tree(user)},
-    )
+    qs = Document.get_tree().filter(is_deleted=False)
+    return render(request, "admin_ui/import.html", {"tree_data": build_nested_tree(qs)})
 
 
 @login_required
@@ -586,12 +582,12 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
 
     size_errors = _validate_html_size(raw_html, source_label="HTML 内容")
     if size_errors:
-        user = request.user  # ty: ignore[unresolved-attribute]
+        qs = Document.get_tree().filter(is_deleted=False)
         return render(
             request,
             "admin_ui/import.html",
             {
-                "tree_data": build_admin_workspace_tree(user),
+                "tree_data": build_nested_tree(qs),
                 "page_error": size_errors[0].reason,
             },
         )
@@ -601,12 +597,12 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
         allow_visual_only=allow_visual_only,
     )
     if errors:
-        user = request.user  # ty: ignore[unresolved-attribute]
+        qs = Document.get_tree().filter(is_deleted=False)
         return render(
             request,
             "admin_ui/import.html",
             {
-                "tree_data": build_admin_workspace_tree(user),
+                "tree_data": build_nested_tree(qs),
                 "page_error": "HTML 内容校验失败，请重新粘贴并解析。",
             },
         )
