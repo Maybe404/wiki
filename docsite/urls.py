@@ -15,4 +15,5 @@ urlpatterns = [
     path("", include("apps.editor.urls")),
     path("", include("apps.publishing.urls")),
     path("", include("apps.workspaces.urls")),
+    path("", include("apps.skills.urls")),
 ]

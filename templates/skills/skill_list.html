@@ -1,0 +1,108 @@
+{% extends "admin_ui/base_admin.html" %}
+{% load static %}
+
+{% block title %}Skill 管理{% endblock %}
+
+{% block main_content %}
+<div class="admin-content-full">
+  <div class="admin-content-header">
+    <div class="admin-content-header-left">
+      <h1 class="admin-content-title">Skill 版本管理</h1>
+    </div>
+    <div class="admin-content-header-actions">
+      <a href="{% url 'skill_download_current' %}" class="btn-secondary">下载当前版本</a>
+    </div>
+  </div>
+
+  {% if errors %}
+  <div class="skill-error-list">
+    {% for err in errors %}<p>{{ err }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Upload form -->
+  <div class="skill-upload-card">
+    <h2 class="skill-section-title">上传新版本</h2>
+    <form method="post" action="{% url 'skill_upload' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="skill-form-row">
+        <div class="modal-field">
+          <label class="modal-label" for="skill-version">版本号</label>
+          <input class="modal-input" id="skill-version" name="version" type="text"
+                 placeholder="如 v0.2" maxlength="20" autocomplete="off"
+                 value="{{ form_version|default:'' }}">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="skill-notes">备注</label>
+          <input class="modal-input" id="skill-notes" name="notes" type="text"
+                 placeholder="可选" maxlength="200" autocomplete="off"
+                 value="{{ form_notes|default:'' }}">
+        </div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="skill-file">上传 .md 文件</label>
+        <input class="modal-input" id="skill-file" name="skill_file" type="file" accept=".md,.txt">
+        <p class="skill-or-label">或粘贴内容</p>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="skill-content">Skill 内容</label>
+        <textarea class="skill-textarea" id="skill-content" name="content"
+                  placeholder="直接粘贴 Markdown 内容（文件上传优先）"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">上传</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Version list -->
+  <h2 class="skill-section-title" style="margin-top: 32px;">历史版本</h2>
+  {% if versions %}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>版本</th>
+        <th>状态</th>
+        <th>备注</th>
+        <th>创建者</th>
+        <th>创建时间</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sv in versions %}
+      <tr>
+        <td>{{ sv.version }}</td>
+        <td>
+          {% if sv.is_active %}
+          <span class="skill-badge skill-badge--active">当前激活</span>
+          {% else %}
+          <span class="skill-badge">草稿</span>
+          {% endif %}
+        </td>
+        <td>{{ sv.notes|default:"—" }}</td>
+        <td>{{ sv.created_by.username }}</td>
+        <td>{{ sv.created_at|date:"Y-m-d H:i" }}</td>
+        <td>
+          <div class="trash-actions">
+            <a href="{% url 'skill_download_version' sv.version %}" class="btn-secondary btn-xs">下载</a>
+            {% if not sv.is_active %}
+            <form method="post" action="{% url 'skill_activate' sv.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary btn-xs">激活</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="admin-content-placeholder" style="margin-top: 24px;">
+    <h2>暂无 Skill 版本</h2>
+    <p>上方上传第一个版本。</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

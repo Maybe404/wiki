@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     "apps.publishing",
     "apps.accounts",
     "apps.core",
+    "apps.skills",
 ]
 
 MIDDLEWARE = [
