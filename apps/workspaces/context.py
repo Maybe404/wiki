@@ -8,11 +8,7 @@ def sidebar_workspaces(request) -> dict:
     """注入 `sidebar_workspaces`：当前用户可访问的工作空间列表。"""
     user = getattr(request, "user", None)
     path = getattr(request, "path", "")
-    if (
-        not user
-        or not user.is_authenticated
-        or not (path.startswith("/admin") or path.startswith("/w/"))
-    ):
+    if not user or not user.is_authenticated or not path.startswith("/admin"):
         return {"sidebar_workspaces": []}
 
     objects = Workspace.objects  # ty: ignore[unresolved-attribute]

@@ -153,19 +153,6 @@
          x-transition:enter-end="opacity-100"
          style="display:none;"></div>
 
-    <!-- Desktop sidebar expand tab (shown when sidebar is collapsed) -->
-    <button class="sidebar-expand-pill"
-            x-show="sidebarCollapsed && !isMobile"
-            @click="sidebarCollapsed = false"
-            title="展开侧边栏"
-            aria-label="展开侧边栏"
-            style="display:none;">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
-           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="4.5 9.5 8.5 6 4.5 2.5"/>
-      </svg>
-    </button>
-
     <!-- ===== Sidebar ===== -->
     <aside class="sidebar" :class="{'sidebar--collapsed': sidebarCollapsed}">
 
@@ -233,26 +220,34 @@
               <path class="sidebar-tool-fold-mark" d="M1.8 5.2l1.2-1.2 1.2 1.2"/>
             </svg>
           </button>
-          <button class="sidebar-tool-btn sidebar-tool-btn--collapse"
-                  type="button"
-                  @click="sidebarCollapsed = true"
-                  title="收起侧边栏"
-                  aria-label="收起侧边栏">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 11 4 7 9 3"/>
-            </svg>
-          </button>
         </div>
       </div>
 
-      <!-- Workspace breadcrumb nav -->
-      <div class="sidebar-workspace-nav">
-        <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-crumb">全部空间</a>
-        {% if current_workspace %}
-          <span class="sidebar-workspace-sep" aria-hidden="true">›</span>
-          <span class="sidebar-workspace-crumb sidebar-workspace-crumb--current">{{ current_workspace.name }}</span>
-        {% endif %}
+      <!-- Workspace switcher -->
+      <div class="sidebar-workspace" x-data="{ wsOpen: false }">
+        <button type="button" class="sidebar-workspace-btn" @click="wsOpen = !wsOpen"
+                :aria-expanded="wsOpen" title="切换工作空间">
+          <svg class="sidebar-workspace-chevron" :class="{'is-open': wsOpen}"
+               width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor"
+               stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="2.5 4 5.5 7.5 8.5 4"/>
+          </svg>
+          <span class="sidebar-workspace-name">
+            {% if current_workspace %}{{ current_workspace.name }}{% else %}所有工作空间{% endif %}
+          </span>
+        </button>
+        <div class="sidebar-workspace-menu" x-show="wsOpen" @click.outside="wsOpen = false"
+             x-transition style="display:none;">
+          <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-item">
+            <span>全部工作空间</span>
+          </a>
+          {% for ws in sidebar_workspaces %}
+            <a href="{% url 'workspace_home' ws.slug %}"
+               class="sidebar-workspace-item{% if current_workspace and current_workspace.slug == ws.slug %} is-active{% endif %}">
+              <span>{{ ws.name }}</span>
+            </a>
+          {% endfor %}
+        </div>
       </div>
 
       <!-- Tree -->
@@ -513,17 +508,6 @@
     </button>
     <button class="ctx-menu-item"
             x-show="ctxMenu.nodeType === 'document'"
-            @click="ctxMenuAction('open-tab')">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
-           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 2.5H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V8.5"/>
-        <path d="M8 2.5h2.5V5"/>
-        <line x1="5.5" y1="7.5" x2="10.5" y2="2.5"/>
-      </svg>
-      在新标签页打开
-    </button>
-    <button class="ctx-menu-item"
-            x-show="ctxMenu.nodeType === 'document'"
             @click="ctxMenuAction('copy')">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
            stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
@@ -591,8 +575,7 @@
         selectedNodeTitle: '',
         treeFolded: false,
         sidebarCollapsed: false,
-        isMobile: window.innerWidth <= 1023,
-        ctxMenu: { open: false, x: 0, y: 0, nodeId: null, nodeTitle: '', nodeType: '', nodeSlug: '' },
+        ctxMenu: { open: false, x: 0, y: 0, nodeId: null, nodeTitle: '', nodeType: '' },
 
         // ── 搜索 ──────────────────────────────────────────────────
         closeSearch() {
@@ -776,14 +759,12 @@
             this.ctxMenu.nodeId = btn.dataset.id;
             this.ctxMenu.nodeTitle = btn.dataset.nodeTitle || '';
             this.ctxMenu.nodeType = btn.dataset.nodeType || '';
-            this.ctxMenu.nodeSlug = btn.dataset.slug || '';
           });
 
           // 树节点展开/收起
           document.addEventListener('click', (e) => {
             const btn = e.target.closest('.tree-toggle');
             if (!btn) return;
-            e.stopPropagation();
             const li = btn.closest('.tree-node');
             if (li) li.classList.toggle('tree-node--collapsed');
           });
@@ -807,10 +788,8 @@
           // 屏幕宽度变化时自动处理侧边栏
           const mq = window.matchMedia('(max-width: 1023px)');
           this.sidebarCollapsed = mq.matches;
-          this.isMobile = mq.matches;
           mq.addEventListener('change', (e) => {
             this.sidebarCollapsed = e.matches;
-            this.isMobile = e.matches;
           });
         },
 
@@ -846,7 +825,7 @@
         },
 
         ctxMenuAction(action) {
-          const { nodeId, nodeTitle, nodeType, nodeSlug } = this.ctxMenu;
+          const { nodeId, nodeTitle, nodeType } = this.ctxMenu;
           this.ctxMenu.open = false;
           if (action === 'add-doc') {
             this.openNewDoc(nodeId);
@@ -858,8 +837,6 @@
             this.copyDoc(nodeId);
           } else if (action === 'move') {
             this.openMoveModal(nodeId, nodeTitle);
-          } else if (action === 'open-tab') {
-            if (nodeSlug) window.open(`/d/${nodeSlug}/`, '_blank', 'noopener');
           }
         },
 
@@ -936,8 +913,6 @@
           dragClass: 'sortable-drag',
           fallbackOnBody: true,
           swapThreshold: 0.65,
-          delay: 200,
-          delayOnTouchOnly: false,
           onEnd(evt) {
             const nodeId = evt.item.dataset.id;
             if (!nodeId) return;
