@@ -8,9 +8,13 @@
 {% endblock %}
 
 {% block body %}
-<div class="pub-shell">
+<div class="pub-shell{% if is_full_page %} pub-shell--no-toc{% endif %}">
 
   <aside class="pub-sidebar" aria-label="文档目录">
+    <nav class="pub-side-nav">
+      <a href="{% url 'home' %}" class="pub-side-nav-link">首页</a>
+      <a href="{% url 'docs_index' %}" class="pub-side-nav-link">文档库</a>
+    </nav>
     <p class="pub-side-label">文档目录</p>
     {% if tree_data %}
       {% render_public_tree tree_data document.slug %}
@@ -20,7 +24,7 @@
   </aside>
 
   <main class="pub-main">
-    <article class="pub-article">
+    <article class="pub-article{% if is_full_page %} pub-article--full-page{% endif %}">
 
       <header class="pub-doc-header" id="doc-top">
         <p class="pub-eyebrow">
@@ -58,19 +62,17 @@
     </article>
   </main>
 
+  {% if not is_full_page and toc_items %}
   <aside class="pub-toc" aria-label="页内目录">
     <p class="pub-toc-title">本页目录</p>
     <nav>
-      {% if toc_items %}
-        {% for item in toc_items %}
-          <a class="pub-toc-link pub-toc-link--lvl{{ item.level }}"
-             data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
-        {% endfor %}
-      {% else %}
-        <p class="pub-toc-empty">本文暂无小节</p>
-      {% endif %}
+      {% for item in toc_items %}
+        <a class="pub-toc-link pub-toc-link--lvl{{ item.level }}"
+           data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
+      {% endfor %}
     </nav>
   </aside>
+  {% endif %}
 
 </div>
 

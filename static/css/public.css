@@ -604,6 +604,10 @@ em     { font-style: italic; }
   min-height: calc(100vh - var(--top-nav-height));
 }
 
+.pub-shell--no-toc {
+  grid-template-columns: var(--pub-sidebar-width) minmax(0, 1fr);
+}
+
 /* ---- Sidebar ---- */
 .pub-sidebar {
   position: sticky;
@@ -619,6 +623,39 @@ em     { font-style: italic; }
 .pub-sidebar::-webkit-scrollbar { width: 4px; }
 .pub-sidebar::-webkit-scrollbar-track { background: transparent; }
 .pub-sidebar::-webkit-scrollbar-thumb { background: var(--color-hairline); border-radius: 2px; }
+
+/* Sidebar nav links (首页 / 文档库) */
+.pub-side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-hairline-soft);
+}
+
+.pub-side-nav-link {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  border-radius: var(--rounded-md);
+  transition: background 180ms, color 180ms;
+}
+
+.pub-side-nav-link:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-soft);
+}
+
+.pub-side-nav-link--active {
+  color: var(--color-ink);
+  background: var(--color-surface-soft);
+  font-weight: 500;
+}
 
 .pub-side-label {
   font-family: var(--font-sans);
@@ -695,6 +732,11 @@ em     { font-style: italic; }
 
 .pub-article--home { max-width: 720px; }
 
+.pub-article--full-page {
+  max-width: none;
+  padding: 40px 0 80px;
+}
+
 /* Eyebrow / lead */
 .pub-eyebrow {
   font-family: var(--font-sans);
@@ -769,17 +811,15 @@ em     { font-style: italic; }
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 4px;
+  padding: 14px 12px;
   text-decoration: none;
   color: var(--color-ink);
-  transition: background 180ms, padding 180ms;
-  border-radius: var(--rounded-xs);
+  transition: background 180ms;
+  border-radius: var(--rounded-md);
 }
 
 .pub-doc-link:hover {
   background: var(--color-link-hover-fill);
-  padding-left: 12px;
-  padding-right: 12px;
 }
 
 .pub-doc-title {
@@ -1095,6 +1135,9 @@ em     { font-style: italic; }
   .pub-shell {
     grid-template-columns: var(--pub-sidebar-width) minmax(0, 1fr);
     column-gap: 32px;
+  }
+  .pub-shell--no-toc {
+    grid-template-columns: var(--pub-sidebar-width) minmax(0, 1fr);
   }
   .pub-toc { display: none; }
 }

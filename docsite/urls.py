@@ -9,7 +9,7 @@ register_converter(UnicodeSlugConverter, "uslug")
 handler404 = "apps.core.views.custom_404"
 
 urlpatterns = [
-    path("", views.home, name="home"),
+    path("", views.docs_index, name="home"),
     path("docs/", views.docs_index, name="docs_index"),
     path("search", views.public_search, name="public_search"),
     path("django-admin/", admin.site.urls),

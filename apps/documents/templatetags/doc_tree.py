@@ -101,7 +101,8 @@ def _render_node(item: dict) -> str:
         f' data-node-type="{node_type}" data-node-title="{title}"'
         f' @contextmenu.prevent="ctxMenu.open=true;'
         f" ctxMenu.x=$event.clientX; ctxMenu.y=$event.clientY; ctxMenu.nodeId='{node_id}';"
-        f" ctxMenu.nodeTitle='{title}'; ctxMenu.nodeType='{node_type}'\">"
+        f" ctxMenu.nodeTitle='{title}'; ctxMenu.nodeType='{node_type}';"
+        f" ctxMenu.nodeSlug='{slug}'\">"
         f'<div class="{row_class}"'
         f' tabindex="0" role="treeitem" aria-label="{title}" data-node-type="{node_type}"'
         f' data-node-id="{node_id}" data-node-title="{title}"'
@@ -113,7 +114,8 @@ def _render_node(item: dict) -> str:
         f"{edit_button}"
         f"{copy_button}"
         f'<button class="node-action node-action--more" aria-label="更多" title="更多"'
-        f' data-id="{node_id}" data-node-type="{node_type}" data-node-title="{title}">'
+        f' data-id="{node_id}" data-node-type="{node_type}" data-node-title="{title}"'
+        f' data-slug="{slug}">'
         f"{_ICON_MORE}</button>"
         f"</div>"
         f"</div>"

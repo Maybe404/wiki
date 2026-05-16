@@ -10,9 +10,13 @@
 {% endblock %}
 
 {% block body %}
-<div class="pub-shell">
+<div class="pub-shell pub-shell--no-toc">
 
   <aside class="pub-sidebar" aria-label="文档目录">
+    <nav class="pub-side-nav">
+      <a href="{% url 'home' %}" class="pub-side-nav-link">首页</a>
+      <a href="{% url 'docs_index' %}" class="pub-side-nav-link pub-side-nav-link--active">文档库</a>
+    </nav>
     <p class="pub-side-label">文档目录</p>
     {% if tree_data %}
       {% render_public_tree tree_data "" %}
@@ -73,14 +77,6 @@
     </article>
   </main>
 
-  <aside class="pub-toc" aria-label="页内目录">
-    <p class="pub-toc-title">本页目录</p>
-    <nav>
-      {% for item in toc_items %}
-        <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
-      {% endfor %}
-    </nav>
-  </aside>
 
 </div>
 {% endblock %}
