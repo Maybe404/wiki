@@ -1,7 +1,7 @@
 {% extends "base_public.html" %}
 {% load doc_tree %}
 
-{% block title %}文档库 — Atlas{% endblock %}
+{% block title %}{{ page_title }} — Atlas{% endblock %}
 
 {% block nav_actions %}
   {% if user.is_authenticated %}
@@ -10,10 +10,28 @@
 {% endblock %}
 
 {% block body %}
-<div class="pub-shell">
+<div class="pub-shell" data-public-shell>
 
   <aside class="pub-sidebar" aria-label="文档目录">
-    <p class="pub-side-label">文档目录</p>
+    <div class="pub-side-head">
+      <p class="pub-side-label">目录</p>
+      <button type="button" class="pub-sidebar-toggle" data-sidebar-toggle aria-label="收起目录">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8.5 3.5L5 7l3.5 3.5"/>
+        </svg>
+        <span>收起</span>
+      </button>
+    </div>
+    <nav class="pub-side-section" aria-label="主要入口">
+      <a class="pub-side-link{% if route_name == 'home' %} is-active{% endif %}" href="{% url 'home' %}">首页</a>
+      <a class="pub-side-link{% if route_name == 'docs_index' %} is-active{% endif %}" href="{% url 'docs_index' %}">文档库</a>
+    </nav>
+    {% if public_workspaces %}
+      <p class="pub-side-label pub-side-label--sub">空间</p>
+      {% render_public_workspace_nav public_workspaces current_public_workspace %}
+    {% endif %}
+    <p class="pub-side-label pub-side-label--sub">当前目录</p>
     {% if tree_data %}
       {% render_public_tree tree_data "" %}
     {% else %}
@@ -25,9 +43,9 @@
     <article class="pub-article pub-article--home">
 
       <section id="hero" class="pub-section pub-section--hero">
-        <p class="pub-eyebrow">文档库</p>
-        <h1 class="pub-display">全部已发布文档</h1>
-        <p class="pub-lead">所有可公开阅读的内容都收在这里。按目录进入文档，或直接搜索标题与正文。</p>
+        <p class="pub-eyebrow">{% if current_public_workspace %}空间{% elif route_name == 'docs_index' %}文档库{% else %}首页{% endif %}</p>
+        <h1 class="pub-display">{{ page_title }}</h1>
+        <p class="pub-lead">{{ page_lead }}</p>
         <div class="pub-cta-row">
           <button type="button" class="pub-btn pub-btn--secondary" data-open-search>搜索文档</button>
         </div>
@@ -72,15 +90,6 @@
 
     </article>
   </main>
-
-  <aside class="pub-toc" aria-label="页内目录">
-    <p class="pub-toc-title">本页目录</p>
-    <nav>
-      {% for item in toc_items %}
-        <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
-      {% endfor %}
-    </nav>
-  </aside>
 
 </div>
 {% endblock %}

@@ -233,13 +233,13 @@
             <polyline points="2.5 4 5.5 7.5 8.5 4"/>
           </svg>
           <span class="sidebar-workspace-name">
-            {% if current_workspace %}{{ current_workspace.name }}{% else %}所有工作空间{% endif %}
+            {% if current_workspace %}{{ current_workspace.name }}{% else %}全部空间{% endif %}
           </span>
         </button>
         <div class="sidebar-workspace-menu" x-show="wsOpen" @click.outside="wsOpen = false"
              x-transition style="display:none;">
-          <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-item">
-            <span>全部工作空间</span>
+          <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-item{% if not current_workspace %} is-active{% endif %}">
+            <span>全部空间</span>
           </a>
           {% for ws in sidebar_workspaces %}
             <a href="{% url 'workspace_home' ws.slug %}"
@@ -516,6 +516,17 @@
       </svg>
       复制
     </button>
+    <button class="ctx-menu-item"
+            x-show="ctxMenu.nodeType === 'document'"
+            @click="ctxMenuAction('open-new-tab')">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8"/>
+        <path d="M7.5 2H11v3.5"/>
+        <path d="M6 7l5-5"/>
+      </svg>
+      在新标签页打开
+    </button>
     <button class="ctx-menu-item" @click="ctxMenuAction('move')">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
            stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
@@ -727,18 +738,6 @@
           // 初始化 SortableJS
           this.$nextTick(() => initSortable());
 
-          // 复制链接按钮
-          document.addEventListener('click', (e) => {
-            const btn = e.target.closest('.node-action--copy');
-            if (!btn) return;
-            const slug = btn.dataset.slug;
-            if (!slug) return;
-            const url = `${location.origin}/d/${slug}/`;
-            navigator.clipboard.writeText(url).then(() => {
-              showToast('链接已复制');
-            });
-          });
-
           // 编辑按钮直接进入文档详情
           document.addEventListener('click', (e) => {
             const btn = e.target.closest('.node-action--edit');
@@ -769,13 +768,18 @@
             if (li) li.classList.toggle('tree-node--collapsed');
           });
 
-          // 选中节点 — 设置 is-active + 导航到文档详情页
+          // 选中节点 — 设置 is-active + 导航到文档或空间页
           document.addEventListener('click', (e) => {
             const row = e.target.closest('.tree-node-row');
             if (!row || e.target.closest('.tree-toggle') || e.target.closest('.node-action')) {
               return;
             }
             this.selectTreeRow(row);
+            if (row.dataset.nodeType === 'workspace' || row.dataset.nodeType === 'space-root') {
+              const url = row.dataset.docUrl;
+              if (url) window.location.href = url;
+              return;
+            }
             if (row.dataset.nodeType === 'folder') {
               const li = row.closest('.tree-node');
               if (li) li.classList.toggle('tree-node--collapsed');
@@ -795,8 +799,8 @@
 
         ctxMenuStyle() {
           // Clamp context menu position to stay on screen
-          const menuW = 172;
-          const menuH = 96;
+          const menuW = 190;
+          const menuH = 220;
           const x = Math.min(this.ctxMenu.x, window.innerWidth - menuW - 8);
           const y = Math.min(this.ctxMenu.y, window.innerHeight - menuH - 8);
           return `top:${y}px; left:${x}px`;
@@ -835,6 +839,8 @@
             this.deleteNode(nodeId, nodeTitle, nodeType);
           } else if (action === 'copy') {
             this.copyDoc(nodeId);
+          } else if (action === 'open-new-tab') {
+            window.open(`/admin/doc/${nodeId}/`, '_blank', 'noopener');
           } else if (action === 'move') {
             this.openMoveModal(nodeId, nodeTitle);
           }

@@ -8,8 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from apps.documents.models import Document
-from apps.documents.utils import build_nested_tree
+from apps.documents.utils import build_admin_workspace_tree
 from apps.workspaces.models import Workspace, WorkspaceMember
 from apps.workspaces.permissions import is_admin
 
@@ -62,8 +61,7 @@ def logout_view(request):
 
 @login_required
 def admin_dashboard(request):
-    qs = Document.get_tree().filter(is_deleted=False)
-    tree_data = build_nested_tree(qs)
+    tree_data = build_admin_workspace_tree(request.user)
 
     if is_admin(request.user):
         workspaces = Workspace.objects.filter(is_deleted=False).order_by("name")  # ty: ignore[unresolved-attribute]
