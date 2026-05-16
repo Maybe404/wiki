@@ -54,8 +54,9 @@
     </div>
   </div>
 
-  <!-- Editor toolbar (hidden by default, slides in when editing) -->
-  <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="编辑工具栏" aria-hidden="true">
+  <!-- Editor toolbar: V2 阶段 7 — 入口已关闭，JS 未加载，待阶段 8 彻底删除 -->
+  <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="编辑工具栏"
+       aria-hidden="true" hidden>
     <button class="toolbar-btn" title="加粗 (⌘B)" aria-label="加粗"
             onclick="EditorManager.execCmd('bold')">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
@@ -145,8 +146,8 @@
     {% endif %}
   </div>
 
-  <!-- Diff view (hidden by default, replaces doc-body when comparing) -->
-  <div class="diff-view" id="diff-view">
+  <!-- Diff view: V2 阶段 7 — 隐藏，待阶段 8 删除 -->
+  <div class="diff-view" id="diff-view" hidden>
     <!-- Action bar -->
     <div class="diff-action-bar">
       <button class="diff-btn-back" onclick="VersionManager.exitDiff()" aria-label="返回文档">
@@ -189,12 +190,9 @@
 
 </div><!-- /.doc-view -->
 
-<!-- Version drawer scrim -->
-<div class="version-drawer-scrim" id="version-drawer-scrim" hidden
-     onclick="VersionManager.closeDrawer()"></div>
-
-<!-- Version drawer -->
-<aside class="version-drawer" id="version-drawer" aria-label="版本历史">
+<!-- Version drawer: V2 阶段 7 — 隐藏，待阶段 8 删除 -->
+<div class="version-drawer-scrim" id="version-drawer-scrim" hidden></div>
+<aside class="version-drawer" id="version-drawer" aria-label="版本历史" hidden>
   <div class="version-drawer-header">
     <h2 class="version-drawer-title">版本历史</h2>
     <button class="version-drawer-close" onclick="VersionManager.closeDrawer()" aria-label="关闭版本历史">
