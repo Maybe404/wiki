@@ -171,6 +171,7 @@ def test_public_detail_uses_content_iframe_sandbox(client, django_user_model):
         slug="isolated-page",
         node_type=Document.NodeType.DOCUMENT,
         status=Document.Status.PUBLISHED,
+        visibility=Document.Visibility.LINK_SHARED,
         owner=user,
     )
     DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
@@ -202,6 +203,7 @@ def test_public_content_endpoint_has_csp_and_resize_script(client, django_user_m
         slug="content-endpoint",
         node_type=Document.NodeType.DOCUMENT,
         status=Document.Status.PUBLISHED,
+        visibility=Document.Visibility.LINK_SHARED,
         owner=user,
     )
     DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
@@ -345,3 +347,121 @@ def test_admin_cannot_create_children_inside_document(client, django_user_model)
     assert child_folder_response.status_code == 400
     assert Document.objects.filter(slug="child-doc").exists() is False
     assert Document.objects.filter(title="子文件夹").exists() is False
+
+
+# ── 权限矩阵测试 ────────────────────────────────────────────────────────────────
+
+
+def _make_workspace(owner):
+    from apps.workspaces.models import Workspace
+
+    return Workspace.objects.create(
+        name="测试空间",
+        slug=f"test-ws-{owner.pk}",
+        created_by=owner,
+    )
+
+
+def _make_published_doc(owner, workspace=None, visibility=None):
+    from apps.documents.models import Document
+
+    if visibility is None:
+        from apps.documents.models import Document as D
+
+        visibility = D.Visibility.WORKSPACE
+
+    return Document.add_root(
+        title="权限测试文档",
+        slug=f"perm-doc-{owner.pk}-{visibility}",
+        node_type=Document.NodeType.DOCUMENT,
+        status=Document.Status.PUBLISHED,
+        owner=owner,
+        workspace=workspace,
+        visibility=visibility,
+    )
+
+
+@pytest.mark.django_db
+def test_link_shared_doc_readable_by_guest(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="owner-ls", password="x")
+    ws = _make_workspace(owner)
+    doc = _make_published_doc(owner, workspace=ws, visibility="link_shared")
+
+    response = client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1")
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_workspace_doc_blocked_for_guest(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="owner-ws", password="x")
+    ws = _make_workspace(owner)
+    doc = _make_published_doc(owner, workspace=ws, visibility="workspace")
+
+    response = client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1")
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_workspace_doc_readable_by_member(client, django_user_model):
+    from apps.workspaces.models import WorkspaceMember
+
+    owner = django_user_model.objects.create_user(username="owner-wm", password="x")
+    member = django_user_model.objects.create_user(username="member-wm", password="x")
+    ws = _make_workspace(owner)
+    WorkspaceMember.objects.create(workspace=ws, user=member)
+    doc = _make_published_doc(owner, workspace=ws, visibility="workspace")
+
+    client.force_login(member)
+    response = client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1")
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_workspace_doc_blocked_for_non_member(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="owner-nm", password="x")
+    stranger = django_user_model.objects.create_user(username="stranger-nm", password="x")
+    ws = _make_workspace(owner)
+    doc = _make_published_doc(owner, workspace=ws, visibility="workspace")
+
+    client.force_login(stranger)
+    response = client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1")
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_admin_can_read_any_doc(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="owner-adm", password="x")
+    admin = django_user_model.objects.create_user(
+        username="admin-adm", password="x", is_staff=True
+    )
+    ws = _make_workspace(owner)
+    doc = _make_published_doc(owner, workspace=ws, visibility="workspace")
+
+    client.force_login(admin)
+    response = client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1")
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_private_doc_readable_only_by_owner(client, django_user_model):
+    owner = django_user_model.objects.create_user(username="owner-priv", password="x")
+    stranger = django_user_model.objects.create_user(username="stranger-priv", password="x")
+    ws = _make_workspace(owner)
+    doc = _make_published_doc(owner, workspace=ws, visibility="private")
+
+    client.force_login(owner)
+    assert client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1").status_code == 200
+
+    client.force_login(stranger)
+    assert client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1").status_code == 404
+
+
+@pytest.mark.django_db
+def test_workspace_doc_no_workspace_blocks_non_admin(client, django_user_model):
+    """workspace=None + visibility=workspace は非管理員に 404 を返す（fail-close）。"""
+    owner = django_user_model.objects.create_user(username="owner-none", password="x")
+    doc = _make_published_doc(owner, workspace=None, visibility="workspace")
+
+    client.force_login(owner)
+    response = client.get(f"/d/{doc.slug}/", HTTP_HOST="127.0.0.1")
+    assert response.status_code == 404

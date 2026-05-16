@@ -1,0 +1,39 @@
+{% extends "admin_ui/base_admin.html" %}
+{% load static doc_tree %}
+
+{% block title %}{{ workspace.name }}{% endblock %}
+
+{% block sidebar_tree %}
+{% csrf_token %}
+{% render_admin_tree tree_data %}
+{% endblock %}
+
+{% block main_content %}
+<div class="admin-content">
+  <div class="admin-content-header">
+    <div class="admin-content-header-left">
+      <h1 class="admin-content-title">{{ workspace.name }}</h1>
+      {% if workspace.description %}
+        <p class="admin-content-desc">{{ workspace.description }}</p>
+      {% endif %}
+    </div>
+    <div class="admin-content-header-actions">
+      <a href="{% url 'workspace_trash' workspace.slug %}" class="btn-secondary">回收站</a>
+    </div>
+  </div>
+
+  {% if tree_data %}
+    <div class="workspace-tree-wrap">
+      {% for item in tree_data %}
+        {% include "workspaces/_tree_node.html" with node=item depth=0 %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="admin-content-placeholder">
+      <h2>此空间还没有内容</h2>
+      <p>从「从 HTML 导入」或「新建文档」开始。</p>
+      <a href="{% url 'admin_import' %}" class="btn-primary">从 HTML 导入</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

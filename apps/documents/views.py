@@ -4,13 +4,16 @@ import secrets
 import uuid
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
+
+from apps.workspaces.models import Workspace
+from apps.workspaces.permissions import can_read_document, can_view_doc_in_admin
 
 from .fts import search_documents
 from .models import AuditLog, Document, DocumentVersion, SlugAlias
@@ -87,12 +90,14 @@ class DocumentDetailView(DetailView):
     def get_object(self, queryset=None):  # type: ignore[override]
         slug = self.kwargs["slug"]
         doc = get_object_or_404(
-            Document,
+            Document.objects.select_related("workspace"),
             slug=slug,
             node_type=Document.NodeType.DOCUMENT,
             status=Document.Status.PUBLISHED,
             is_deleted=False,
         )
+        if not can_read_document(self.request.user, doc):
+            raise Http404
         return doc
 
     def get_context_data(self, **kwargs):
@@ -122,12 +127,14 @@ def document_content(request: HttpRequest, slug: str) -> HttpResponse:
         return redirect("doc_content", slug=alias.document.slug, permanent=True)
 
     doc = get_object_or_404(
-        Document,
+        Document.objects.select_related("workspace"),
         slug=slug,
         node_type=Document.NodeType.DOCUMENT,
         status=Document.Status.PUBLISHED,
         is_deleted=False,
     )
+    if not can_read_document(request.user, doc):  # ty: ignore[unresolved-attribute]
+        raise Http404
     version = _current_version(doc)
     return _document_content_response(str(version.html) if version else "")
 
@@ -136,11 +143,13 @@ def document_content(request: HttpRequest, slug: str) -> HttpResponse:
 def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
     """管理端文档详情页 /admin/doc/<pk>/，含编辑入口。"""
     doc = get_object_or_404(
-        Document,
+        Document.objects.select_related("workspace"),
         pk=pk,
         node_type=Document.NodeType.DOCUMENT,
         is_deleted=False,
     )
+    if not can_view_doc_in_admin(request.user, doc):  # ty: ignore[unresolved-attribute]
+        raise Http404
 
     # 优先取最新命名版本，没有就取最新自动版本
     version = _current_version(doc)
@@ -171,11 +180,13 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
 def admin_doc_content(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
     """Authenticated iframe content endpoint for admin previews, including drafts."""
     doc = get_object_or_404(
-        Document,
+        Document.objects.select_related("workspace"),
         pk=pk,
         node_type=Document.NodeType.DOCUMENT,
         is_deleted=False,
     )
+    if not can_view_doc_in_admin(request.user, doc):  # ty: ignore[unresolved-attribute]
+        raise Http404
     version = _current_version(doc)
     return _document_content_response(str(version.html) if version else "")
 
@@ -234,6 +245,12 @@ def _generate_folder_slug(title: str) -> str:
     return f"folder-{secrets.token_hex(6)}"
 
 
+def _resolve_folder_workspace(parent: Document | None) -> Workspace | None:
+    if parent is not None and parent.workspace_id is not None:  # ty: ignore[unresolved-attribute]
+        return parent.workspace  # ty: ignore[invalid-return-type]
+    return Workspace.objects.filter(slug="default", is_deleted=False).first()  # ty: ignore[unresolved-attribute]
+
+
 @login_required
 @require_POST
 def folder_create(request: HttpRequest) -> HttpResponse:
@@ -242,25 +259,28 @@ def folder_create(request: HttpRequest) -> HttpResponse:
     parent_id = request.POST.get("parent_id", "").strip()
     slug = _generate_folder_slug(title)
 
+    folder_parent: Document | None = None
     if parent_id:
-        parent = get_object_or_404(Document, pk=parent_id, is_deleted=False)
-        if parent.node_type != Document.NodeType.FOLDER:
+        folder_parent = get_object_or_404(
+            Document.objects.select_related("workspace"), pk=parent_id, is_deleted=False
+        )
+        if folder_parent.node_type != Document.NodeType.FOLDER:
             return HttpResponse("只能在文件夹中创建子文件夹", status=400)
-        folder = parent.add_child(
-            title=title,
-            slug=slug,
-            node_type=Document.NodeType.FOLDER,
-            status=Document.Status.DRAFT,
-            owner=request.user,  # ty: ignore[unresolved-attribute]
-        )
-    else:
-        folder = Document.add_root(
-            title=title,
-            slug=slug,
-            node_type=Document.NodeType.FOLDER,
-            status=Document.Status.DRAFT,
-            owner=request.user,  # ty: ignore[unresolved-attribute]
-        )
+
+    ws = _resolve_folder_workspace(folder_parent)
+    node_kwargs = {
+        "title": title,
+        "slug": slug,
+        "node_type": Document.NodeType.FOLDER,
+        "status": Document.Status.DRAFT,
+        "owner": request.user,  # ty: ignore[unresolved-attribute]
+        "workspace": ws,
+    }
+    folder = (
+        folder_parent.add_child(**node_kwargs)
+        if folder_parent is not None
+        else Document.add_root(**node_kwargs)
+    )
 
     AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
         actor=request.user,  # ty: ignore[unresolved-attribute]

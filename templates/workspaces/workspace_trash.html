@@ -1,0 +1,47 @@
+{% extends "admin_ui/base_admin.html" %}
+{% load static %}
+
+{% block title %}回收站 · {{ workspace.name }}{% endblock %}
+
+{% block main_content %}
+<div class="admin-content">
+  <div class="admin-content-header">
+    <div class="admin-content-header-left">
+      <p class="admin-content-breadcrumb">
+        <a href="{% url 'workspace_home' workspace.slug %}">{{ workspace.name }}</a>
+        <span aria-hidden="true"> › </span>
+        回收站
+      </p>
+      <h1 class="admin-content-title">回收站</h1>
+    </div>
+  </div>
+
+  {% if deleted_nodes %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>标题</th>
+          <th>类型</th>
+          <th>所有者</th>
+          <th>删除时间</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for node in deleted_nodes %}
+        <tr>
+          <td>{{ node.title }}</td>
+          <td>{{ node.get_node_type_display }}</td>
+          <td>{{ node.owner.username }}</td>
+          <td>{{ node.deleted_at|date:"Y-m-d H:i"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="admin-content-placeholder">
+      <h2>回收站为空</h2>
+      <p>删除的文档和文件夹会出现在这里。</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

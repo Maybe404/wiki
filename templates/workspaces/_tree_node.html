@@ -1,0 +1,31 @@
+{% load static %}
+<div class="ws-tree-node ws-tree-node--{{ node.node.node_type }}" style="padding-left: {{ depth|add:0 }}rem;">
+  {% if node.node.node_type == 'folder' %}
+    <span class="ws-tree-icon" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 4a1 1 0 0 1 1-1h3l1.5 2H12a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4z"/>
+      </svg>
+    </span>
+    <span class="ws-tree-label">{{ node.node.title }}</span>
+  {% else %}
+    <a class="ws-tree-link" href="{% url 'admin_doc_detail' node.node.pk %}">
+      <span class="ws-tree-icon" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="1" width="10" height="12" rx="1"/>
+          <line x1="4.5" y1="5" x2="9.5" y2="5"/>
+          <line x1="4.5" y1="7.5" x2="9.5" y2="7.5"/>
+          <line x1="4.5" y1="10" x2="7" y2="10"/>
+        </svg>
+      </span>
+      {{ node.node.title }}
+    </a>
+    <span class="ws-tree-status ws-tree-status--{{ node.node.status }}">{{ node.node.get_status_display }}</span>
+  {% endif %}
+</div>
+{% for child in node.children %}
+  {% with new_depth=depth|add:1 %}
+    {% include "workspaces/_tree_node.html" with node=child depth=new_depth %}
+  {% endwith %}
+{% endfor %}

@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 from apps.documents.fts import sync_fts_plain_text
 from apps.documents.models import AuditLog, Document, DocumentVersion
 from apps.documents.utils import build_nested_tree
+from apps.workspaces.models import Workspace
 
 from .sanitizer import sanitize_inline
 from .validator import (
@@ -324,6 +325,13 @@ def version_restore(request: HttpRequest, pk: uuid.UUID, vid: int) -> JsonRespon
 # ── HTML 导入 ─────────────────────────────────────────────────────────────────
 
 
+def _resolve_workspace(parent: Document | None) -> Workspace | None:
+    """文档创建时解析目标 workspace：优先继承父节点，回退到默认空间。"""
+    if parent is not None and parent.workspace_id is not None:  # ty: ignore[unresolved-attribute]
+        return parent.workspace  # ty: ignore[invalid-return-type]
+    return Workspace.objects.filter(slug="default", is_deleted=False).first()  # ty: ignore[unresolved-attribute]
+
+
 def _generate_unique_slug(title: str) -> str:
     """从标题生成带随机后缀的唯一 slug。"""
     base = slugify(title, allow_unicode=True)[:40] or "doc"
@@ -360,20 +368,23 @@ def create_blank_document(request: HttpRequest) -> HttpResponse:
         slug = _generate_unique_slug(title)
 
     content_html, editable_blocks = _blank_document_html()
+    parent: Document | None = None
+    if parent_id:
+        parent = get_object_or_404(
+            Document.objects.select_related("workspace"), pk=parent_id, is_deleted=False
+        )
+        if parent.node_type != Document.NodeType.FOLDER:
+            return HttpResponse("只能在文件夹中创建文档", status=400)
+
     doc_kwargs = {
         "title": title,
         "slug": slug,
         "node_type": Document.NodeType.DOCUMENT,
         "status": Document.Status.DRAFT,
         "owner": request.user,  # ty: ignore[unresolved-attribute]
+        "workspace": _resolve_workspace(parent),
     }
-    if parent_id:
-        parent = get_object_or_404(Document, pk=parent_id, is_deleted=False)
-        if parent.node_type != Document.NodeType.FOLDER:
-            return HttpResponse("只能在文件夹中创建文档", status=400)
-        doc = parent.add_child(**doc_kwargs)
-    else:
-        doc = Document.add_root(**doc_kwargs)
+    doc = parent.add_child(**doc_kwargs) if parent is not None else Document.add_root(**doc_kwargs)
 
     DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
         document=doc,
@@ -600,20 +611,27 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
     if not slug or Document.objects.filter(slug=slug, is_deleted=False).exists():
         slug = _generate_unique_slug(title)
 
+    import_parent: Document | None = None
+    if parent_id:
+        import_parent = get_object_or_404(
+            Document.objects.select_related("workspace"), pk=parent_id, is_deleted=False
+        )
+        if import_parent.node_type != Document.NodeType.FOLDER:
+            return HttpResponse("只能将文档导入到文件夹中", status=400)
+
     doc_kwargs = {
         "title": title,
         "slug": slug,
         "node_type": Document.NodeType.DOCUMENT,
         "status": Document.Status.DRAFT,
         "owner": request.user,  # ty: ignore[unresolved-attribute]
+        "workspace": _resolve_workspace(import_parent),
     }
-    if parent_id:
-        parent = get_object_or_404(Document, pk=parent_id, is_deleted=False)
-        if parent.node_type != Document.NodeType.FOLDER:
-            return HttpResponse("只能将文档导入到文件夹中", status=400)
-        doc = parent.add_child(**doc_kwargs)
-    else:
-        doc = Document.add_root(**doc_kwargs)
+    doc = (
+        import_parent.add_child(**doc_kwargs)
+        if import_parent is not None
+        else Document.add_root(**doc_kwargs)
+    )
 
     DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
         document=doc,
