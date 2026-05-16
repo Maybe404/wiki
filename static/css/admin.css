@@ -2358,6 +2358,193 @@ details[open] .preview-chevron { transform: rotate(180deg); }
   display: none;
 }
 
+/* ===== Admin content header (workspace pages, doc detail breadcrumbs) ===== */
+.admin-content-full {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 48px 56px;
+  overflow-y: auto;
+}
+
+.admin-content-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.admin-content-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-content-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.admin-content-breadcrumb {
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.admin-content-breadcrumb a {
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+.admin-content-breadcrumb a:hover { color: var(--color-primary); }
+
+.admin-content-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-title-lg);
+  font-weight: 400;
+  color: var(--color-ink);
+  line-height: 1.3;
+}
+
+.admin-content-desc {
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-muted);
+  margin-top: 4px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-body);
+}
+
+.admin-table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.admin-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-hairline-soft);
+  vertical-align: middle;
+}
+
+.admin-table tbody tr:last-child td { border-bottom: none; }
+
+/* ===== Sidebar workspace switcher ===== */
+.sidebar-workspace {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-hairline-soft);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-workspace-back {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+  text-decoration: none;
+  padding: 3px 6px;
+  border-radius: var(--rounded-xs);
+  transition: background 120ms, color 120ms;
+}
+.sidebar-workspace-back:hover {
+  background: var(--color-surface-soft);
+  color: var(--color-ink-muted);
+}
+
+.sidebar-workspace-name {
+  font-size: var(--text-body-sm);
+  color: var(--color-ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== Workspace cards (dashboard) ===== */
+.ws-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.ws-card {
+  display: block;
+  padding: 20px 22px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--rounded-md);
+  text-decoration: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.ws-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 12px rgba(204, 120, 92, 0.10);
+}
+
+.ws-card-name {
+  font-family: var(--font-serif);
+  font-size: var(--text-title-md);
+  font-weight: 400;
+  color: var(--color-ink);
+  margin-bottom: 4px;
+}
+
+.ws-card-desc {
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-muted);
+  line-height: 1.5;
+}
+
+.ws-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+}
+
+/* ===== Doc header breadcrumb ===== */
+.doc-header-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  font-size: var(--text-meta);
+  color: var(--color-ink-subtle);
+  margin-bottom: 4px;
+}
+
+.doc-header-breadcrumb a {
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition: color 120ms;
+}
+.doc-header-breadcrumb a:hover { color: var(--color-primary); }
+
 /* ── Responsive ── */
 @media (max-width: 1023px) {
   .import-page { padding: 24px 20px 40px; }

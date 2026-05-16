@@ -4,7 +4,7 @@
 {% block title %}回收站 · {{ workspace.name }}{% endblock %}
 
 {% block main_content %}
-<div class="admin-content">
+<div class="admin-content-full">
   <div class="admin-content-header">
     <div class="admin-content-header-left">
       <p class="admin-content-breadcrumb">
@@ -38,7 +38,7 @@
       </tbody>
     </table>
   {% else %}
-    <div class="admin-content-placeholder">
+    <div class="admin-content-placeholder" style="margin-top: 40px;">
       <h2>回收站为空</h2>
       <p>删除的文档和文件夹会出现在这里。</p>
     </div>

@@ -156,9 +156,16 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
     content_html = version.html if version else ""
     is_full_page = bool(version and version.is_full_page)
 
-    # 侧边栏目录树
-    qs = Document.get_tree().filter(is_deleted=False)
-    tree_data = build_nested_tree(qs)
+    # 侧边栏目录树：按 workspace 过滤
+    tree_qs = (
+        Document.get_tree().filter(workspace=doc.workspace, is_deleted=False)
+        if doc.workspace_id is not None
+        else Document.get_tree().filter(is_deleted=False)
+    )
+    tree_data = build_nested_tree(tree_qs)
+
+    # 面包屑：取祖先中 node_type=folder 的节点
+    breadcrumbs = list(doc.get_ancestors())
 
     return render(
         request,
@@ -172,6 +179,8 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
             if is_full_page
             else "",
             "tree_data": tree_data,
+            "current_workspace": doc.workspace,
+            "breadcrumbs": breadcrumbs,
         },
     )
 

@@ -7,6 +7,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.documents.models import Document
 from apps.documents.utils import build_nested_tree
+from apps.workspaces.models import Workspace
+from apps.workspaces.permissions import is_admin
 
 from .forms import LoginForm
 
@@ -57,4 +59,17 @@ def logout_view(request):
 def admin_dashboard(request):
     qs = Document.get_tree().filter(is_deleted=False)
     tree_data = build_nested_tree(qs)
-    return render(request, "admin_ui/dashboard.html", {"tree_data": tree_data})
+
+    if is_admin(request.user):
+        workspaces = Workspace.objects.filter(is_deleted=False).order_by("name")  # ty: ignore[unresolved-attribute]
+    else:
+        workspaces = Workspace.objects.filter(  # ty: ignore[unresolved-attribute]
+            is_deleted=False,
+            members__user=request.user,
+        ).order_by("name")
+
+    return render(
+        request,
+        "admin_ui/dashboard.html",
+        {"tree_data": tree_data, "workspaces": workspaces},
+    )

@@ -24,6 +24,7 @@ def workspace_home(request: HttpRequest, workspace_slug: str) -> HttpResponse:
         {
             "workspace": ws,
             "tree_data": tree_data,
+            "current_workspace": ws,
         },
     )
 
@@ -47,5 +48,6 @@ def workspace_trash(request: HttpRequest, workspace_slug: str) -> HttpResponse:
         {
             "workspace": ws,
             "deleted_nodes": deleted_nodes,
+            "current_workspace": ws,
         },
     )

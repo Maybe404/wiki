@@ -14,6 +14,17 @@
   <!-- Sticky doc header -->
   <div class="doc-header">
     <div class="doc-header-left">
+      {% if document.workspace or breadcrumbs %}
+      <p class="doc-header-breadcrumb">
+        {% if document.workspace %}
+        <a href="{% url 'workspace_home' document.workspace.slug %}">{{ document.workspace.name }}</a>
+        {% endif %}
+        {% for ancestor in breadcrumbs %}
+        <span aria-hidden="true"> › </span>
+        {{ ancestor.title }}
+        {% endfor %}
+      </p>
+      {% endif %}
       <span class="doc-status-pill doc-status-pill--{{ document.status }}">
         {{ document.get_status_display }}
       </span>

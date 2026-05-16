@@ -355,7 +355,7 @@ def test_admin_cannot_create_children_inside_document(client, django_user_model)
 def _make_workspace(owner):
     from apps.workspaces.models import Workspace
 
-    return Workspace.objects.create(
+    return Workspace.objects.create(  # ty: ignore[unresolved-attribute]
         name="测试空间",
         slug=f"test-ws-{owner.pk}",
         created_by=owner,
@@ -408,7 +408,7 @@ def test_workspace_doc_readable_by_member(client, django_user_model):
     owner = django_user_model.objects.create_user(username="owner-wm", password="x")
     member = django_user_model.objects.create_user(username="member-wm", password="x")
     ws = _make_workspace(owner)
-    WorkspaceMember.objects.create(workspace=ws, user=member)
+    WorkspaceMember.objects.create(workspace=ws, user=member)  # ty: ignore[unresolved-attribute]
     doc = _make_published_doc(owner, workspace=ws, visibility="workspace")
 
     client.force_login(member)
@@ -431,9 +431,7 @@ def test_workspace_doc_blocked_for_non_member(client, django_user_model):
 @pytest.mark.django_db
 def test_admin_can_read_any_doc(client, django_user_model):
     owner = django_user_model.objects.create_user(username="owner-adm", password="x")
-    admin = django_user_model.objects.create_user(
-        username="admin-adm", password="x", is_staff=True
-    )
+    admin = django_user_model.objects.create_user(username="admin-adm", password="x", is_staff=True)
     ws = _make_workspace(owner)
     doc = _make_published_doc(owner, workspace=ws, visibility="workspace")
 

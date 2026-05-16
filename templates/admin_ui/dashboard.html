@@ -1,7 +1,7 @@
 {% extends "admin_ui/base_admin.html" %}
 {% load doc_tree %}
 
-{% block title %}文档管理{% endblock %}
+{% block title %}工作区{% endblock %}
 
 {% block sidebar_tree %}
 {% csrf_token %}
@@ -9,10 +9,29 @@
 {% endblock %}
 
 {% block main_content %}
-<div class="admin-content">
-  <div class="admin-content-placeholder">
-    <h2>选择左侧文档</h2>
-    <p>点击目录树中的文档查看内容；也可以从左下角新建草稿或导入 HTML。</p>
+<div class="admin-content-full">
+  <div class="admin-content-header">
+    <div class="admin-content-header-left">
+      <h1 class="admin-content-title">工作区</h1>
+    </div>
   </div>
+
+  {% if workspaces %}
+    <div class="ws-card-grid">
+      {% for ws in workspaces %}
+      <a href="{% url 'workspace_home' ws.slug %}" class="ws-card">
+        <p class="ws-card-name">{{ ws.name }}</p>
+        {% if ws.description %}
+          <p class="ws-card-desc">{{ ws.description }}</p>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="admin-content-placeholder">
+      <h2>暂无可访问的工作区</h2>
+      <p>请联系管理员将你加入工作区，或由管理员创建新工作区。</p>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}
