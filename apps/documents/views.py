@@ -281,7 +281,7 @@ def tree_node_delete(request: HttpRequest, pk: uuid.UUID) -> JsonResponse:
     ids = [node.pk, *(child.pk for child in descendants)]
     now = timezone.now()
 
-    Document.objects.filter(pk__in=ids).update(is_deleted=True, updated_at=now)
+    Document.objects.filter(pk__in=ids).update(is_deleted=True, deleted_at=now, updated_at=now)
     AuditLog.objects.create(  # ty: ignore[unresolved-attribute]
         actor=request.user,  # ty: ignore[unresolved-attribute]
         action=AuditLog.Action.DELETE,

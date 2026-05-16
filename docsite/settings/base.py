@@ -11,6 +11,7 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "treebeard",
     "axes",
+    "apps.workspaces",
     "apps.documents",
     "apps.editor",
     "apps.publishing",

@@ -19,6 +19,11 @@ class Document(MP_Node):
         PUBLISHED = "published", "已发布"
         ARCHIVED = "archived", "已归档"
 
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "私有"
+        WORKSPACE = "workspace", "空间内可见"
+        LINK_SHARED = "link_shared", "链接可访问"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200, verbose_name="标题")
     slug = models.SlugField(unique=True, allow_unicode=True, verbose_name="Slug")
@@ -34,6 +39,21 @@ class Document(MP_Node):
         default=Status.DRAFT,
         verbose_name="状态",
     )
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.PROTECT,
+        related_name="nodes",
+        null=True,
+        blank=True,
+        verbose_name="工作空间",
+    )
+    visibility = models.CharField(
+        max_length=20,
+        choices=Visibility.choices,
+        default=Visibility.WORKSPACE,
+        verbose_name="可见性",
+    )
+    plain_text = models.TextField(blank=True, verbose_name="纯文本摘要")
     owner = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
@@ -41,6 +61,7 @@ class Document(MP_Node):
         verbose_name="所有者",
     )
     is_deleted = models.BooleanField(default=False, verbose_name="软删除")
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="删除时间")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
     published_at = models.DateTimeField(null=True, blank=True, verbose_name="发布时间")
