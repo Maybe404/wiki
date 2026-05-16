@@ -1821,6 +1821,22 @@
 
 .import-textarea::placeholder { color: var(--color-ink-subtle); }
 
+.import-visual-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-muted);
+  line-height: 1.45;
+}
+
+.import-visual-only input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
 .import-form-actions {
   display: flex;
   align-items: center;
@@ -2119,6 +2135,47 @@
 }
 
 details[open] .preview-chevron { transform: rotate(180deg); }
+
+.import-preview-wrap {
+  display: grid;
+  gap: 18px;
+  padding: 18px 20px 20px;
+  background: var(--color-canvas);
+}
+
+.import-preview-section {
+  display: grid;
+  gap: 8px;
+}
+
+.import-preview-label {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 500;
+  color: var(--color-ink-subtle);
+}
+
+.import-preview-text {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-ink-body);
+  line-height: 1.55;
+}
+
+.import-html-snippet {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--color-surface-dark);
+  color: var(--color-ink-on-dark);
+  border-radius: var(--rounded-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 /* ── Doc preview content (AI content classes inside admin) ── */
 .doc-preview-wrap {

@@ -1,10 +1,12 @@
 import json
+import re
 import secrets
 import uuid
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
@@ -13,6 +15,57 @@ from django.views.generic import DetailView
 from .fts import search_documents
 from .models import AuditLog, Document, DocumentVersion, SlugAlias
 from .utils import build_nested_tree, build_published_tree, extract_toc
+
+DOCUMENT_CONTENT_CSP = (
+    "default-src 'none'; "
+    "script-src 'unsafe-inline' 'unsafe-eval' "
+    "https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; "
+    "style-src 'unsafe-inline' "
+    "https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com "
+    "https://cdnjs.cloudflare.com; "
+    "font-src https://fonts.gstatic.com https://cdn.jsdelivr.net https://unpkg.com data:; "
+    "img-src https: data: blob:; "
+    "media-src https: data: blob:; "
+    "connect-src https:; "
+    "frame-src https:;"
+)
+
+_RESIZE_SCRIPT = """<script>
+(() => {
+  const send = () => parent.postMessage({
+    type: "atlas-doc-resize",
+    height: Math.ceil(document.documentElement.scrollHeight)
+  }, "*");
+  new ResizeObserver(send).observe(document.documentElement);
+  window.addEventListener("load", send);
+  send();
+})();
+</script>"""
+
+_BODY_END_RE = re.compile(r"</body\s*>", re.IGNORECASE)
+
+
+def _current_version(doc: Document) -> DocumentVersion | None:
+    """Return the current content snapshot for a document."""
+    return doc.versions.filter(is_auto=False).first() or doc.versions.first()  # ty: ignore[unresolved-attribute]
+
+
+def _inject_resize_script(html: str) -> str:
+    """Inject iframe resize bridge without parsing or rewriting user HTML."""
+    match = _BODY_END_RE.search(html)
+    if match:
+        return f"{html[: match.start()]}{_RESIZE_SCRIPT}{html[match.start() :]}"
+    return f"{html}{_RESIZE_SCRIPT}"
+
+
+def _document_content_response(html: str) -> HttpResponse:
+    response = HttpResponse(
+        _inject_resize_script(html),
+        content_type="text/html; charset=utf-8",
+    )
+    response["Content-Security-Policy"] = DOCUMENT_CONTENT_CSP
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
 
 
 class DocumentDetailView(DetailView):
@@ -45,22 +98,38 @@ class DocumentDetailView(DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         doc: Document = self.object  # type: ignore[assignment]
-        version: DocumentVersion | None = (
-            doc.versions.filter(is_auto=False).first()  # ty: ignore[unresolved-attribute]
-            or doc.versions.first()  # ty: ignore[unresolved-attribute]
-        )
+        version = _current_version(doc)
         raw_html: str = str(version.html) if version else ""
         is_full_page = bool(version and version.is_full_page)
         if is_full_page:
             content_html, toc_items = raw_html, []
+            ctx["content_url"] = reverse("doc_content", kwargs={"slug": doc.slug})
         else:
             content_html, toc_items = extract_toc(raw_html)
+            ctx["content_url"] = ""
         ctx["version"] = version
         ctx["content_html"] = content_html
         ctx["is_full_page"] = is_full_page
         ctx["toc_items"] = toc_items
         ctx["tree_data"] = build_published_tree()
         return ctx
+
+
+def document_content(request: HttpRequest, slug: str) -> HttpResponse:
+    """Public iframe content endpoint for published full-page HTML."""
+    alias = SlugAlias.objects.filter(old_slug=slug).select_related("document").first()  # ty: ignore[unresolved-attribute]
+    if alias is not None:
+        return redirect("doc_content", slug=alias.document.slug, permanent=True)
+
+    doc = get_object_or_404(
+        Document,
+        slug=slug,
+        node_type=Document.NodeType.DOCUMENT,
+        status=Document.Status.PUBLISHED,
+        is_deleted=False,
+    )
+    version = _current_version(doc)
+    return _document_content_response(str(version.html) if version else "")
 
 
 @login_required
@@ -74,10 +143,7 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
     )
 
     # 优先取最新命名版本，没有就取最新自动版本
-    version: DocumentVersion | None = (
-        doc.versions.filter(is_auto=False).first()  # type: ignore[unresolved-attribute]
-        or doc.versions.first()  # type: ignore[unresolved-attribute]
-    )
+    version = _current_version(doc)
     content_html = version.html if version else ""
     is_full_page = bool(version and version.is_full_page)
 
@@ -93,9 +159,25 @@ def admin_doc_detail(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
             "version": version,
             "content_html": content_html,
             "is_full_page": is_full_page,
+            "content_url": reverse("admin_doc_content", kwargs={"pk": doc.pk})
+            if is_full_page
+            else "",
             "tree_data": tree_data,
         },
     )
+
+
+@login_required
+def admin_doc_content(request: HttpRequest, pk: uuid.UUID) -> HttpResponse:
+    """Authenticated iframe content endpoint for admin previews, including drafts."""
+    doc = get_object_or_404(
+        Document,
+        pk=pk,
+        node_type=Document.NodeType.DOCUMENT,
+        is_deleted=False,
+    )
+    version = _current_version(doc)
+    return _document_content_response(str(version.html) if version else "")
 
 
 @login_required

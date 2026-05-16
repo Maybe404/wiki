@@ -15,7 +15,7 @@
     <div class="import-page-header-inner">
       <h1 class="import-page-title">从 HTML 导入</h1>
       <p class="import-page-desc">
-        将 Codex 或 Claude Code 生成的 HTML 粘贴到下方，系统会提取正文、移除页面脚本与样式，并导入为可编辑文档。
+        将外部生成的完整 HTML 粘贴或上传到下方，系统会原样保存页面结构、样式与脚本，并通过 iframe 隔离展示。
       </p>
       <a href="{% url 'admin_import' %}#rules" class="import-guide-link">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor"
@@ -24,7 +24,7 @@
           <line x1="6.5" y1="5.5" x2="6.5" y2="9"/>
           <circle cx="6.5" cy="3.8" r="0.6" fill="currentColor" stroke="none"/>
         </svg>
-        查看模板规范
+        查看导入策略
       </a>
     </div>
   </div>
@@ -73,6 +73,10 @@
           autocomplete="off"
           aria-label="HTML 内容"
         ></textarea>
+        <label class="import-visual-only">
+          <input type="checkbox" name="allow_visual_only">
+          <span>这是纯可视化页面，正文文本很少或没有文本</span>
+        </label>
         <div class="import-form-actions">
           <button type="submit" class="btn-primary import-parse-btn">
             <span class="import-spinner htmx-indicator" aria-hidden="true">
@@ -112,37 +116,33 @@
 
   <!-- 规范说明（锚点） -->
   <div class="import-rules" id="rules">
-    <h2 class="import-rules-title">HTML 模板规范</h2>
+    <h2 class="import-rules-title">HTML 导入策略</h2>
 
     <div class="import-rules-grid">
       <div class="import-rule-card">
-        <h3 class="import-rule-card-title">推荐使用的 class</h3>
+        <h3 class="import-rule-card-title">原样保留</h3>
         <ul class="import-rule-list">
-          <li><code>article-shell</code> — 文章外层容器</li>
-          <li><code>info-callout</code> — 提示/注意框</li>
-          <li><code>content-card</code> — 内容卡片</li>
-          <li><code>code-block</code> — 代码块</li>
-          <li><code>table</code> — 表格</li>
+          <li>保留 <code>&lt;style&gt;</code>、<code>&lt;script&gt;</code>、字体与图形资源声明</li>
+          <li>不把外部页面改写成 Atlas 正文样式</li>
+          <li>不注入 <code>data-editable</code>，导入后作为完整页面展示</li>
         </ul>
       </div>
 
       <div class="import-rule-card">
-        <h3 class="import-rule-card-title">可编辑标记规则</h3>
+        <h3 class="import-rule-card-title">基础检查</h3>
         <ul class="import-rule-list">
-          <li>未标记时，系统会自动识别标题、段落、列表与表格文本</li>
-          <li>需要精确控制时，加 <code>data-editable="true"</code></li>
-          <li>同时加 <code>data-editable-id="唯一ID"</code></li>
-          <li>ID 全文唯一，只用字母/数字/连字符</li>
+          <li>上传文件需为 <code>.html</code> 或 <code>.htm</code></li>
+          <li>单次导入建议 1 KB 至 2 MB，超出范围会提示错误</li>
+          <li>默认要求能抽取到可见文本；纯可视化页面需主动勾选说明</li>
         </ul>
       </div>
 
       <div class="import-rule-card import-rule-card--danger">
-        <h3 class="import-rule-card-title">严禁事项</h3>
+        <h3 class="import-rule-card-title">隔离策略</h3>
         <ul class="import-rule-list">
-          <li>禁止内联 <code>style</code> 属性</li>
-          <li>自动移除 <code>&lt;script&gt;</code>、<code>&lt;iframe&gt;</code>、<code>&lt;style&gt;</code></li>
-          <li>自动移除 <code>&lt;link&gt;</code> 等外部资源声明</li>
-          <li>禁止 <code>on*</code> 事件属性</li>
+          <li>阅读页通过 iframe sandbox 展示完整 HTML</li>
+          <li>文档页面使用独立 CSP，默认只允许常见 CDN、字体、图片与 HTTPS 请求</li>
+          <li>父页面只接受来自对应 iframe 的高度消息</li>
         </ul>
       </div>
     </div>

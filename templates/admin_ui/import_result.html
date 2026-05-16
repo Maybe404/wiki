@@ -39,17 +39,16 @@
       </svg>
       校验通过
     </span>
-    {% if is_full_page %}
-      <span class="import-block-count">完整 HTML 页面（原样保留，不支持行内编辑）</span>
-    {% else %}
-      <span class="import-block-count">{{ editable_blocks|length }} 个可编辑区域</span>
-    {% endif %}
+    <span class="import-block-count">完整 HTML 页面 · {{ byte_size }} bytes · 原样保存</span>
   </div>
 
   <form method="post" action="{% url 'admin_import_confirm' %}" class="import-confirm-form">
     {% csrf_token %}
-    {# 原始 HTML 经服务端再校验，不信任此字段内容；bleach 在 confirm 时重新跑 #}
+    {# 原始 HTML 在 confirm 阶段重新做基础校验；不会在父页面作为 HTML 执行。 #}
     <textarea name="raw_html" class="hidden-field">{{ raw_html }}</textarea>
+    {% if allow_visual_only %}
+      <input type="hidden" name="allow_visual_only" value="on">
+    {% endif %}
 
     <div class="import-confirm-fields">
       <div class="form-group">
@@ -106,17 +105,28 @@
     </div>
   </form>
 
-  <!-- 文档内容预览（可折叠） -->
+  <!-- 文档内容摘要（不执行导入 HTML） -->
   <details class="import-preview-details">
     <summary class="import-preview-summary">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
            stroke-width="1.5" stroke-linecap="round" class="preview-chevron" aria-hidden="true">
         <polyline points="2 4 6 8 10 4"/>
       </svg>
-      预览文档内容
+      查看导入摘要
     </summary>
-    <div class="doc-preview-wrap">
-      {{ cleaned_html|safe }}
+    <div class="import-preview-wrap">
+      <div class="import-preview-section">
+        <p class="import-preview-label">可见文本</p>
+        {% if plain_text %}
+          <p class="import-preview-text">{{ plain_text|truncatechars:260 }}</p>
+        {% else %}
+          <p class="import-preview-text">已按纯可视化页面处理。</p>
+        {% endif %}
+      </div>
+      <div class="import-preview-section">
+        <p class="import-preview-label">HTML 片段</p>
+        <pre class="import-html-snippet"><code>{{ raw_html|truncatechars:1200 }}</code></pre>
+      </div>
     </div>
   </details>
 

@@ -168,6 +168,44 @@ def sanitize_full_page(raw_html: str) -> str:
     return str(soup)
 
 
+def extract_plain_text(html: str) -> str:
+    """Extract visible text for search and basic import validation."""
+    return BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
+
+
+def validate_full_page_import(
+    raw_html: str,
+    *,
+    allow_visual_only: bool = False,
+) -> tuple[list[ValidationError], str]:
+    """Validate V2 full-page HTML without rewriting, stripping, or beautifying it."""
+    errors: list[ValidationError] = []
+
+    try:
+        soup = BeautifulSoup(raw_html, "html.parser")
+    except Exception as exc:
+        errors.append(
+            ValidationError(
+                line=None,
+                reason="HTML 解析失败",
+                suggestion=f"请检查标签闭合与字符编码后重试。解析器返回：{exc}",
+            )
+        )
+        return errors, ""
+
+    plain_text = soup.get_text(" ", strip=True)
+    if not plain_text and not allow_visual_only:
+        errors.append(
+            ValidationError(
+                line=None,
+                reason="没有检测到可见文本",
+                suggestion="如果这是纯图形或动画页面，请勾选“这是纯可视化页面”后重新解析。",
+            )
+        )
+
+    return errors, plain_text
+
+
 def validate_import_html(
     raw_html: str,
 ) -> tuple[list[ValidationError], str, dict[str, str]]:
@@ -392,7 +430,7 @@ def _extract_editable_blocks(cleaned_html: str) -> dict[str, str]:
 def extract_title(html: str) -> str:
     """从 HTML 中提取第一个标题元素的文本，作为文档标题建议。"""
     soup = BeautifulSoup(html, "html.parser")
-    for tag_name in ("h1", "h2", "h3"):
+    for tag_name in ("title", "h1", "h2", "h3"):
         tag = soup.find(tag_name)
         if isinstance(tag, Tag):
             text = tag.get_text(strip=True)

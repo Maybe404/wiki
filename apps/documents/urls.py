@@ -2,7 +2,9 @@ from django.urls import path
 
 from .views import (
     DocumentDetailView,
+    admin_doc_content,
     admin_doc_detail,
+    document_content,
     folder_create,
     search_api,
     tree_node_delete,
@@ -11,7 +13,9 @@ from .views import (
 
 urlpatterns = [
     path("d/<slug:slug>/", DocumentDetailView.as_view(), name="doc_detail"),
+    path("d/<slug:slug>/content/", document_content, name="doc_content"),
     path("admin/doc/<uuid:pk>/", admin_doc_detail, name="admin_doc_detail"),
+    path("admin/doc/<uuid:pk>/content/", admin_doc_content, name="admin_doc_content"),
     path("admin/folder/new/", folder_create, name="admin_folder_create"),
     path("admin/tree/node/<uuid:pk>/delete/", tree_node_delete, name="admin_tree_node_delete"),
     path("admin/tree/reorder", tree_reorder, name="admin_tree_reorder"),

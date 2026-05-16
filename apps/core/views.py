@@ -61,7 +61,7 @@ def public_search(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"groups": []})
 
     result = search_documents(q)
-    is_auth = request.user.is_authenticated
+    is_auth = request.user.is_authenticated  # ty: ignore[unresolved-attribute]
 
     filtered_groups = []
     for group in result.get("groups", []):
@@ -87,7 +87,7 @@ def public_search(request: HttpRequest) -> JsonResponse:
 def _slug_for_doc(doc_id: str) -> str | None:
     try:
         return Document.objects.only("slug").get(id=doc_id).slug
-    except Document.DoesNotExist:
+    except Document.DoesNotExist:  # ty: ignore[unresolved-attribute]
         return None
 
 

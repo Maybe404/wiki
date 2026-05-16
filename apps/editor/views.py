@@ -22,9 +22,7 @@ from .sanitizer import sanitize_inline
 from .validator import (
     ValidationError,
     extract_title,
-    is_full_page_html,
-    sanitize_full_page,
-    validate_import_html,
+    validate_full_page_import,
 )
 
 logger = logging.getLogger(__name__)
@@ -398,33 +396,98 @@ def create_blank_document(request: HttpRequest) -> HttpResponse:
     return redirect("admin_doc_detail", pk=doc.pk)
 
 
+_MIN_UPLOAD_BYTES = 1_000  # 1 KB；过短通常不是完整 HTML 页面
 _MAX_UPLOAD_BYTES = 2_000_000  # 2 MB；超出视为非法上传
 
 
-def _read_html_payload(request: HttpRequest) -> str:
-    """优先读取上传文件内容；否则读取粘贴的 raw_html。超出尺寸返回空字符串。"""
+def _payload_error(reason: str, suggestion: str) -> ValidationError:
+    return ValidationError(line=None, reason=reason, suggestion=suggestion)
+
+
+def _validate_html_size(raw_html: str, *, source_label: str) -> list[ValidationError]:
+    if not raw_html.strip():
+        return []
+
+    byte_size = len(raw_html.encode("utf-8"))
+    if byte_size < _MIN_UPLOAD_BYTES:
+        return [
+            _payload_error(
+                f"{source_label}过短",
+                (
+                    "请导入完整 HTML 页面，建议大小为 "
+                    f"{_MIN_UPLOAD_BYTES // 1000} KB 到 {_MAX_UPLOAD_BYTES // 1000} KB。"
+                ),
+            )
+        ]
+    if byte_size > _MAX_UPLOAD_BYTES:
+        return [
+            _payload_error(
+                f"{source_label}过大",
+                f"{source_label}需 ≤ {_MAX_UPLOAD_BYTES // 1000} KB。",
+            )
+        ]
+    return []
+
+
+def _read_html_payload(request: HttpRequest) -> tuple[str, list[ValidationError]]:
+    """优先读取上传文件内容；否则读取粘贴的 raw_html。"""
+    errors: list[ValidationError] = []
     upload = request.FILES.get("html_file")
     if upload:
+        filename = str(getattr(upload, "name", ""))
+        if not filename.lower().endswith((".html", ".htm")):
+            errors.append(
+                _payload_error(
+                    "文件类型不正确",
+                    "请上传 .html 或 .htm 文件；也可以把 HTML 内容粘贴到文本框。",
+                )
+            )
+            return "", errors
         if upload.size and upload.size > _MAX_UPLOAD_BYTES:
-            return ""
+            errors.append(
+                _payload_error(
+                    "HTML 文件过大",
+                    f"上传文件需 ≤ {_MAX_UPLOAD_BYTES // 1000} KB。",
+                )
+            )
+            return "", errors
         raw = upload.read(_MAX_UPLOAD_BYTES + 1)
+        if isinstance(raw, bytes) and len(raw) > _MAX_UPLOAD_BYTES:
+            errors.append(
+                _payload_error(
+                    "HTML 文件过大",
+                    f"上传文件需 ≤ {_MAX_UPLOAD_BYTES // 1000} KB。",
+                )
+            )
+            return "", errors
         if isinstance(raw, bytes):
             try:
-                return raw.decode("utf-8")
+                decoded = raw.decode("utf-8")
             except UnicodeDecodeError:
-                return raw.decode("utf-8", errors="replace")
-        return str(raw)
-    return request.POST.get("raw_html", "").strip()
+                decoded = raw.decode("utf-8", errors="replace")
+            errors.extend(_validate_html_size(decoded, source_label="HTML 文件"))
+            return decoded, errors
+
+        decoded = str(raw)
+        errors.extend(_validate_html_size(decoded, source_label="HTML 文件"))
+        return decoded, errors
+
+    raw_html = request.POST.get("raw_html", "")
+    errors.extend(_validate_html_size(raw_html, source_label="HTML 内容"))
+    return raw_html, errors
 
 
 def _clean_import_html(
     raw_html: str,
-) -> tuple[bool, list[ValidationError], str, dict[str, str]]:
-    """整页 HTML 走 sanitize_full_page，否则走 validate_import_html。"""
-    if is_full_page_html(raw_html):
-        return True, [], sanitize_full_page(raw_html), {}
-    errors, cleaned_html, editable_blocks = validate_import_html(raw_html)
-    return False, errors, cleaned_html, editable_blocks
+    *,
+    allow_visual_only: bool = False,
+) -> tuple[list[ValidationError], str, str]:
+    """V2 import: validate only, then preserve the submitted HTML byte-for-byte as text."""
+    errors, plain_text = validate_full_page_import(
+        raw_html,
+        allow_visual_only=allow_visual_only,
+    )
+    return errors, raw_html, plain_text
 
 
 @login_required
@@ -438,34 +501,43 @@ def import_document_page(request: HttpRequest) -> HttpResponse:
 @require_POST
 def import_validate(request: HttpRequest) -> HttpResponse:
     """POST /admin/import/validate/ (HTMX) — 校验 HTML，返回错误列表或预览片段。"""
-    raw_html = _read_html_payload(request)
+    raw_html, payload_errors = _read_html_payload(request)
+    allow_visual_only = request.POST.get("allow_visual_only") == "on"
 
-    if not raw_html:
-        empty_error = ValidationError(
-            line=None,
-            reason="请粘贴 HTML 内容或上传 HTML 文件",
-            suggestion=f"上传文件需 ≤ {_MAX_UPLOAD_BYTES // 1000} KB，或将内容粘贴到下方文本框",
-        )
+    if payload_errors or not raw_html.strip():
+        errors = payload_errors or [
+            ValidationError(
+                line=None,
+                reason="请粘贴 HTML 内容或上传 HTML 文件",
+                suggestion=(
+                    f"上传文件需 ≤ {_MAX_UPLOAD_BYTES // 1000} KB，或将内容粘贴到下方文本框"
+                ),
+            )
+        ]
         return render(
             request,
             "admin_ui/import_result.html",
             {
-                "errors": [empty_error],
-                "cleaned_html": "",
-                "editable_blocks": {},
+                "errors": errors,
                 "raw_html": "",
-                "is_full_page": False,
+                "plain_text": "",
+                "byte_size": 0,
+                "is_full_page": True,
                 "suggested_title": "",
                 "suggested_slug": "",
+                "allow_visual_only": allow_visual_only,
             },
         )
 
-    full_page, errors, cleaned_html, editable_blocks = _clean_import_html(raw_html)
+    errors, preserved_html, plain_text = _clean_import_html(
+        raw_html,
+        allow_visual_only=allow_visual_only,
+    )
 
     suggested_title = ""
     suggested_slug = ""
     if not errors:
-        suggested_title = extract_title(cleaned_html)
+        suggested_title = extract_title(preserved_html)
         suggested_slug = _generate_unique_slug(suggested_title)
 
     return render(
@@ -473,13 +545,13 @@ def import_validate(request: HttpRequest) -> HttpResponse:
         "admin_ui/import_result.html",
         {
             "errors": errors,
-            "cleaned_html": cleaned_html,
-            "editable_blocks": editable_blocks,
-            # confirm 阶段会再过一次 sanitize，所以回填 cleaned_html 是安全且省事的
-            "raw_html": cleaned_html if not errors else raw_html,
-            "is_full_page": full_page,
+            "raw_html": preserved_html if not errors else raw_html,
+            "plain_text": plain_text,
+            "byte_size": len(raw_html.encode("utf-8")),
+            "is_full_page": True,
             "suggested_title": suggested_title,
             "suggested_slug": suggested_slug,
+            "allow_visual_only": allow_visual_only,
         },
     )
 
@@ -488,15 +560,31 @@ def import_validate(request: HttpRequest) -> HttpResponse:
 @require_POST
 def import_confirm(request: HttpRequest) -> HttpResponse:
     """POST /admin/import/confirm/ — 服务端再校验，入库，跳转到文档详情页。"""
-    raw_html: str = request.POST.get("raw_html", "").strip()
+    raw_html: str = request.POST.get("raw_html", "")
     title: str = request.POST.get("title", "").strip()[:200] or "未命名文档"
     slug: str = request.POST.get("slug", "").strip()
     parent_id: str = request.POST.get("parent_id", "").strip()
+    allow_visual_only = request.POST.get("allow_visual_only") == "on"
 
-    if not raw_html:
+    if not raw_html.strip():
         return redirect("admin_import")
 
-    full_page, errors, cleaned_html, editable_blocks = _clean_import_html(raw_html)
+    size_errors = _validate_html_size(raw_html, source_label="HTML 内容")
+    if size_errors:
+        qs = Document.get_tree().filter(is_deleted=False)
+        return render(
+            request,
+            "admin_ui/import.html",
+            {
+                "tree_data": build_nested_tree(qs),
+                "page_error": size_errors[0].reason,
+            },
+        )
+
+    errors, preserved_html, _plain_text = _clean_import_html(
+        raw_html,
+        allow_visual_only=allow_visual_only,
+    )
     if errors:
         qs = Document.get_tree().filter(is_deleted=False)
         return render(
@@ -529,9 +617,9 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
 
     DocumentVersion.objects.create(  # ty: ignore[unresolved-attribute]
         document=doc,
-        html=cleaned_html,
-        editable_blocks=editable_blocks,
-        is_full_page=full_page,
+        html=preserved_html,
+        editable_blocks={},
+        is_full_page=True,
         author=request.user,  # ty: ignore[unresolved-attribute]
         is_auto=False,
         note="从 HTML 导入",
@@ -547,11 +635,11 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
             "slug": slug,
             "title": title,
             "parent_id": parent_id or None,
-            "is_full_page": full_page,
+            "is_full_page": True,
         },
     )
 
-    sync_fts_plain_text(str(doc.pk), cleaned_html)
+    sync_fts_plain_text(str(doc.pk), preserved_html)
 
     username = request.user.get_username()  # ty: ignore[unresolved-attribute]
     logger.info(
@@ -559,7 +647,7 @@ def import_confirm(request: HttpRequest) -> HttpResponse:
         doc.pk,
         username,
         slug,
-        full_page,
+        True,
     )
 
     return redirect("admin_doc_detail", pk=doc.pk)

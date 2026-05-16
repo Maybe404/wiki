@@ -80,6 +80,7 @@ def publish_document(request: HttpRequest, pk: uuid.UUID) -> JsonResponse:
         document=doc,
         html=latest.html,
         editable_blocks=latest.editable_blocks,
+        is_full_page=latest.is_full_page,
         author=request.user,  # ty: ignore[unresolved-attribute]
         is_auto=False,
         note=f"发布于 {now.strftime('%Y-%m-%d')}",

@@ -20,30 +20,7 @@
       <h1 class="doc-header-title">{{ document.title }}</h1>
     </div>
     <div class="doc-header-actions">
-      <!-- 版本历史 -->
-      <button class="btn-secondary" id="btn-versions"
-              onclick="VersionManager.toggleDrawer()" aria-label="版本历史">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="7" cy="7" r="5.5"/>
-          <polyline points="7 4 7 7 9 9"/>
-        </svg>
-        版本
-      </button>
-      {% if not is_full_page %}
-      <!-- 编辑（完整 HTML 文档不支持行内编辑） -->
-      <button class="btn-secondary" id="btn-edit" onclick="EditorManager.enterEditMode()">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor"
-             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M9.5 2.5l2 2L4 12H2v-2l7.5-7.5z"/>
-        </svg>
-        编辑
-      </button>
-      <button class="btn-secondary" id="btn-exit-edit" style="display:none"
-              onclick="EditorManager.exitEditMode()">
-        退出编辑
-      </button>
-      {% endif %}
+      {# V2 阶段 1：旧版本 diff 与行内编辑入口先隐藏，旧文件和 API 留到阶段 7 清理。 #}
       {% if document.status == 'draft' %}
       <button class="btn-primary" id="btn-publish"
               onclick="PublishManager.openPublishDrawer()">
@@ -132,9 +109,11 @@
     <div class="doc-fullpage-wrap">
       <p class="doc-fullpage-hint">完整 HTML 文档，原样渲染。不支持行内编辑，重新生成请走「从 HTML 导入」。</p>
       <iframe class="doc-fullpage-frame"
-              sandbox=""
+              data-doc-frame
+              sandbox="allow-scripts allow-downloads allow-popups"
+              referrerpolicy="no-referrer"
               title="{{ document.title }}"
-              srcdoc="{{ content_html }}"></iframe>
+              src="{{ content_url }}"></iframe>
     </div>
     {% elif content_html %}
     <div class="doc-content" id="doc-content">
@@ -329,21 +308,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/editor.js' %}"></script>
-<script src="{% static 'js/versions.js' %}"></script>
+<script src="{% static 'js/doc_frame.js' %}" defer></script>
 <script src="{% static 'js/publish.js' %}"></script>
 <script>
-  {% if not is_full_page %}
-  EditorManager.init({
-    docId: '{{ document.pk }}',
-    csrfToken: '{{ csrf_token }}',
-  });
-  {% endif %}
-  VersionManager.init({
-    docId: '{{ document.pk }}',
-    csrfToken: '{{ csrf_token }}',
-    adminDocUrl: '{% url "admin_doc_detail" document.pk %}',
-  });
   PublishManager.init({
     docId: '{{ document.pk }}',
     csrfToken: '{{ csrf_token }}',
