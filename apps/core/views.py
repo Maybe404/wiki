@@ -13,8 +13,15 @@ from apps.workspaces.permissions import can_access_workspace, can_read_document
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    """公开首页：默认进入可访问文档总览。"""
-    return _render_docs_home(request, route_name="home")
+    """公开首页：系统介绍 + 特性展示（非文档列表）。"""
+    toc_items = [
+        {"id": "intro", "text": "概览"},
+        {"id": "why-html", "text": "为什么不是 Markdown"},
+        {"id": "showcase", "text": "HTML 能呈现什么"},
+        {"id": "workflow", "text": "团队工作流"},
+        {"id": "start", "text": "开始阅读"},
+    ]
+    return render(request, "landing.html", {"toc_items": toc_items})
 
 
 def docs_index(request: HttpRequest) -> HttpResponse:

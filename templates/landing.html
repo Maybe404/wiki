@@ -160,14 +160,5 @@ console.log(doc.url);</code></pre>
     </article>
   </main>
 
-  <aside class="pub-toc" aria-label="页内目录">
-    <p class="pub-toc-title">本页目录</p>
-    <nav>
-      {% for item in toc_items %}
-        <a class="pub-toc-link" data-anchor="#{{ item.id }}" href="#{{ item.id }}">{{ item.text }}</a>
-      {% endfor %}
-    </nav>
-  </aside>
-
 </div>
 {% endblock %}
