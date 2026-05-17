@@ -14,6 +14,56 @@
     });
   });
 
+  // ── Public doc tree: 折叠 / 展开 + 状态持久化 ────────────────────────────
+  const pubTree = document.querySelector('.pub-tree-root');
+  if (pubTree) {
+    const PUB_TREE_KEY = 'atlas-pub-tree-collapsed';
+
+    const savePubTree = () => {
+      const ids = Array.from(document.querySelectorAll('.pub-tree-node--collapsed'))
+        .map((n) => n.dataset.id)
+        .filter(Boolean);
+      try {
+        localStorage.setItem(PUB_TREE_KEY, JSON.stringify(ids));
+      } catch (e) { /* localStorage 不可用时静默降级 */ }
+    };
+
+    let pubCollapsed;
+    try {
+      pubCollapsed = new Set(JSON.parse(localStorage.getItem(PUB_TREE_KEY) || '[]'));
+    } catch (e) {
+      pubCollapsed = new Set();
+    }
+    document.querySelectorAll('.pub-tree-node').forEach((n) => {
+      if (n.dataset.id && pubCollapsed.has(n.dataset.id)) {
+        n.classList.add('pub-tree-node--collapsed');
+      }
+    });
+
+    // 当前文档的祖先空间 / 目录强制展开并滚动到可见
+    const activeLink = pubTree.querySelector('.pub-side-link.is-active');
+    if (activeLink) {
+      const li = activeLink.closest('.pub-tree-node');
+      let parent = li ? li.parentElement.closest('.pub-tree-node') : null;
+      while (parent) {
+        parent.classList.remove('pub-tree-node--collapsed');
+        parent = parent.parentElement.closest('.pub-tree-node');
+      }
+      activeLink.scrollIntoView({ block: 'center' });
+    }
+
+    // 点三角或文件夹 / 空间名折叠；文档链接保持正常跳转
+    pubTree.addEventListener('click', (e) => {
+      const trigger = e.target.closest('.pub-tree-toggle, .pub-side-link--folder');
+      if (!trigger) return;
+      const node = trigger.closest('.pub-tree-node');
+      if (node) {
+        node.classList.toggle('pub-tree-node--collapsed');
+        savePubTree();
+      }
+    });
+  }
+
   // ── TOC scroll-spy ──────────────────────────────────────────────────────
   const tocLinks = Array.from(document.querySelectorAll('.pub-toc-link'));
   if (tocLinks.length) {

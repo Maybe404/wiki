@@ -39,7 +39,12 @@
             编辑
           </button>
           <form method="post" action="{% url 'workspace_delete' ws.slug %}"
-                onsubmit="return confirm('确认删除工作空间「{{ ws.name|escapejs }}」？空间下有文档时无法删除。');">
+                @submit.prevent="askConfirm({
+                  title: '删除工作空间',
+                  message: '确认删除工作空间「{{ ws.name|escapejs }}」？空间下有文档时无法删除。',
+                  label: '删除',
+                  danger: true,
+                }).then((ok) => { if (ok) $el.submit(); })">
             {% csrf_token %}
             <button type="submit" class="ws-card-action ws-card-action--danger">删除</button>
           </form>

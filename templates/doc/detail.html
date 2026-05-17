@@ -25,9 +25,7 @@
       <a class="pub-side-link" href="{% url 'home' %}">首页</a>
       <a class="pub-side-link" href="{% url 'docs_index' %}">文档库</a>
     </nav>
-    <p class="pub-side-label pub-side-label--sub">
-      {% if document.workspace %}{{ document.workspace.name }}{% else %}文档目录{% endif %}
-    </p>
+    <p class="pub-side-label pub-side-label--sub">文档目录</p>
     {% if tree_data %}
       {% render_public_tree tree_data document.slug %}
     {% else %}

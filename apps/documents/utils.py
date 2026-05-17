@@ -162,11 +162,23 @@ def build_published_tree(user=None, workspace: Workspace | None = None) -> list[
     return prune(build_nested_tree(all_nodes))
 
 
+def build_published_workspace_tree(user=None) -> list[dict]:
+    """公开阅读页侧栏树：按空间分组的已发布文档树，只含有可见文档的空间。"""
+    items: list[dict] = []
+    for ws in workspace_queryset_for_user(user):
+        children = build_published_tree(user, ws)
+        if children:
+            items.append({"kind": "workspace", "workspace": ws, "children": children})
+    return items
+
+
 def build_admin_workspace_tree(user, current_workspace: Workspace | None = None) -> list[dict]:
-    """Sidebar tree with each workspace as a top-level node holding its folders and docs."""
+    """Sidebar tree with each workspace as a top-level node holding its folders and docs.
+
+    Always lists every workspace the user can see, so the sidebar stays a full
+    navigator even while viewing one document; current_workspace only marks active.
+    """
     workspaces = workspace_queryset_for_user(user)
-    if current_workspace is not None:
-        workspaces = [ws for ws in workspaces if ws.pk == current_workspace.pk]
 
     workspace_items = []
     for ws in workspaces:

@@ -452,6 +452,29 @@
     </div>
   </div>
 
+  <!-- ===== Confirm modal（替代原生 window.confirm）===== -->
+  <div class="modal-overlay"
+       x-show="confirmOpen"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       @click.self="confirmCancel()"
+       style="display:none;"
+       aria-modal="true"
+       role="dialog"
+       aria-labelledby="confirm-modal-title">
+    <div class="modal">
+      <h2 class="modal-title" id="confirm-modal-title" x-text="confirmTitle"></h2>
+      <p class="modal-hint" x-text="confirmMessage"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" @click="confirmCancel()">取消</button>
+        <button type="button" @click="confirmAccept()"
+                :class="confirmDanger ? 'btn-danger' : 'btn-primary'"
+                x-text="confirmLabel"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Context menu ===== -->
   <div class="ctx-menu"
        x-show="ctxMenu.open"
@@ -560,6 +583,41 @@
         treeFolded: false,
         sidebarCollapsed: false,
         ctxMenu: { open: false, x: 0, y: 0, nodeId: null, nodeTitle: '', nodeType: '' },
+
+        confirmOpen: false,
+        confirmTitle: '',
+        confirmMessage: '',
+        confirmLabel: '确认',
+        confirmDanger: false,
+        _confirmResolve: null,
+
+        // ── 确认弹窗（替代 window.confirm）───────────────────────────
+        askConfirm({ title, message, label = '确认', danger = false }) {
+          this.confirmTitle = title;
+          this.confirmMessage = message;
+          this.confirmLabel = label;
+          this.confirmDanger = danger;
+          this.confirmOpen = true;
+          return new Promise((resolve) => {
+            this._confirmResolve = resolve;
+          });
+        },
+
+        confirmAccept() {
+          this.confirmOpen = false;
+          if (this._confirmResolve) {
+            this._confirmResolve(true);
+            this._confirmResolve = null;
+          }
+        },
+
+        confirmCancel() {
+          this.confirmOpen = false;
+          if (this._confirmResolve) {
+            this._confirmResolve(false);
+            this._confirmResolve = null;
+          }
+        },
 
         // ── 搜索 ──────────────────────────────────────────────────
         closeSearch() {
@@ -701,6 +759,7 @@
             }
             if (e.key === 'Escape') {
               if (this.searchOpen) { this.closeSearch(); return; }
+              if (this.confirmOpen) { this.confirmCancel(); return; }
               this.newDocOpen = false;
               this.newDocParentId = '';
               this.newFolderOpen = false;
@@ -711,7 +770,7 @@
 
           // 初始化 SortableJS + 恢复目录树展开状态
           this.$nextTick(() => {
-            initSortable();
+            initSortable(this);
             applyTreeState();
           });
 
@@ -748,28 +807,18 @@
             }
           });
 
-          // 选中节点 — 设置 is-active + 导航到文档或空间页
+          // 选中节点 — 行点击只负责选中；文档行额外进入详情。
+          // 工作空间 / 文件夹的展开收起统一交给左侧三角，不在行点击里 toggle。
           document.addEventListener('click', (e) => {
             const row = e.target.closest('.tree-node-row');
             if (!row || e.target.closest('.tree-toggle') || e.target.closest('.node-action')) {
               return;
             }
             this.selectTreeRow(row);
-            if (row.dataset.nodeType === 'workspace') {
+            if (row.dataset.nodeType === 'document') {
               const url = row.dataset.docUrl;
               if (url) window.location.href = url;
-              return;
             }
-            if (row.dataset.nodeType === 'folder') {
-              const li = row.closest('.tree-node');
-              if (li) {
-                li.classList.toggle('tree-node--collapsed');
-                saveCollapsedTreeIds();
-              }
-              return;
-            }
-            const url = row.dataset.docUrl;
-            if (url) window.location.href = url;
           });
 
           // 屏幕宽度变化时自动处理侧边栏
@@ -791,7 +840,12 @@
 
         async deleteNode(nodeId, nodeTitle, nodeType) {
           const kind = nodeType === 'folder' ? '文件夹' : '文档';
-          const ok = window.confirm(`确认删除${kind}「${nodeTitle || '未命名'}」？文件夹中的子项也会一并从目录隐藏。`);
+          const ok = await this.askConfirm({
+            title: `删除${kind}`,
+            message: `确认删除${kind}「${nodeTitle || '未命名'}」？文件夹中的子项也会一并从目录隐藏。`,
+            label: '删除',
+            danger: true,
+          });
           if (!ok) return;
 
           const res = await fetch(`/admin/tree/node/${nodeId}/delete/`, {
@@ -929,7 +983,7 @@
       active.scrollIntoView({ block: 'center' });
     }
 
-    function initSortable() {
+    function initSortable(app) {
       const lists = document.querySelectorAll('.sortable-list');
       lists.forEach((list) => {
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -948,7 +1002,7 @@
           onStart() {
             document.body.classList.add('tree-dragging');
           },
-          onEnd(evt) {
+          async onEnd(evt) {
             document.body.classList.remove('tree-dragging');
             const nodeId = evt.item.dataset.id;
             if (!nodeId) return;
@@ -963,8 +1017,13 @@
             const destNode = evt.to.closest('.tree-node');
             const destName = destNode ? (destNode.dataset.nodeTitle || '目标目录') : '根目录';
 
-            // 拖动到新目录：确认后再持久化路径（bug #4）
-            if (!window.confirm(`将「${nodeTitle}」移动到「${destName}」？`)) {
+            // 拖动到新目录：确认后再持久化路径
+            const ok = await app.askConfirm({
+              title: '移动节点',
+              message: `将「${nodeTitle}」移动到「${destName}」？`,
+              label: '移动',
+            });
+            if (!ok) {
               window.location.reload();
               return;
             }

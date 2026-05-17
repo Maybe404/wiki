@@ -22,7 +22,7 @@ from apps.workspaces.permissions import (
 
 from .fts import search_documents
 from .models import AuditLog, Document, DocumentVersion, SlugAlias
-from .utils import build_admin_workspace_tree, build_published_tree, extract_toc
+from .utils import build_admin_workspace_tree, build_published_workspace_tree, extract_toc
 
 DOCUMENT_CONTENT_CSP = (
     "default-src 'none'; "
@@ -100,11 +100,7 @@ class DocumentDetailView(DetailView):
         ctx["content_html"] = content_html
         ctx["is_full_page"] = is_full_page
         ctx["toc_items"] = toc_items
-        user = self.request.user
-        workspace = cast(
-            Workspace | None, doc.workspace if getattr(doc, "workspace_id", None) else None
-        )
-        ctx["tree_data"] = build_published_tree(user, workspace)
+        ctx["tree_data"] = build_published_workspace_tree(self.request.user)
         return ctx
 
 

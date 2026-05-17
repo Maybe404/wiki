@@ -157,43 +157,76 @@ def render_admin_tree(tree_data: list, active_id: str = "") -> str:
 # ---------- 公开端目录树（只读，无操作按钮，无状态点）----------
 
 
+_ICON_PUB_CHEVRON = (
+    '<svg class="pub-tree-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" '
+    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
+    'aria-hidden="true"><path d="M3 4l2 2 2-2"/></svg>'
+)
+
+
 def _render_public_node(item: dict, active_slug: str) -> str:
     node = item["node"]
     children: list = item.get("children", [])
+    node_id = escape(str(node.pk))
     title = escape(node.title)
     slug = escape(node.slug)
     is_folder = node.node_type == node.NodeType.FOLDER
-    is_active = " is-active" if not is_folder and str(node.slug) == active_slug else ""
 
     children_html = ""
     if children:
         inner = "".join(_render_public_node(c, active_slug) for c in children)
         children_html = f'<ul class="pub-tree-children">{inner}</ul>'
 
-    if is_folder:
-        return (
-            f'<li class="pub-tree-node pub-tree-node--folder">'
-            f'<span class="pub-side-link pub-side-link--folder">'
-            f"<span>{title}</span>"
-            f"</span>"
-            f"{children_html}"
-            f"</li>"
-        )
+    toggle = (
+        f'<button type="button" class="pub-tree-toggle" aria-label="展开/收起">'
+        f"{_ICON_PUB_CHEVRON}</button>"
+        if children
+        else '<span class="pub-tree-toggle-spacer" aria-hidden="true"></span>'
+    )
 
+    if is_folder:
+        label = f'<span class="pub-side-link pub-side-link--folder"><span>{title}</span></span>'
+    else:
+        active = " is-active" if str(node.slug) == active_slug else ""
+        label = f'<a class="pub-side-link{active}" href="/d/{slug}/"><span>{title}</span></a>'
+
+    node_class = "pub-tree-node pub-tree-node--folder" if is_folder else "pub-tree-node"
     return (
-        f'<li class="pub-tree-node">'
-        f'<a class="pub-side-link{is_active}" href="/d/{slug}/">'
-        f"<span>{title}</span>"
-        f"</a>"
+        f'<li class="{node_class}" data-id="{node_id}">'
+        f'<div class="pub-tree-row">{toggle}{label}</div>'
         f"{children_html}"
+        f"</li>"
+    )
+
+
+def _render_public_workspace(item: dict, active_slug: str) -> str:
+    workspace = item["workspace"]
+    children: list = item.get("children", [])
+    node_id = f"ws-{escape(str(workspace.pk))}"
+    title = escape(workspace.name)
+    inner = "".join(_render_public_node(c, active_slug) for c in children)
+    return (
+        f'<li class="pub-tree-node pub-tree-node--folder pub-tree-node--space" data-id="{node_id}">'
+        f'<div class="pub-tree-row">'
+        f'<button type="button" class="pub-tree-toggle" aria-label="展开/收起">'
+        f"{_ICON_PUB_CHEVRON}</button>"
+        f'<span class="pub-side-link pub-side-link--folder pub-side-link--space">'
+        f"<span>{title}</span></span>"
+        f"</div>"
+        f'<ul class="pub-tree-children">{inner}</ul>'
         f"</li>"
     )
 
 
 @register.simple_tag
 def render_public_tree(tree_data: list, active_slug: str = "") -> str:
-    """渲染公开端目录树为嵌套 HTML。只列已发布文档，无任何编辑入口。"""
-    inner = "".join(_render_public_node(item, active_slug) for item in tree_data)
+    """渲染公开端目录树。支持「空间 → 文件夹 → 文档」层级，可折叠，只读无编辑入口。"""
+    inner = "".join(
+        _render_public_workspace(item, active_slug)
+        if item.get("kind") == "workspace"
+        else _render_public_node(item, active_slug)
+        for item in tree_data
+    )
     return mark_safe(f'<ul class="pub-tree-root">{inner}</ul>')
 
 
