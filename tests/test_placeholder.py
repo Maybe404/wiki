@@ -194,7 +194,7 @@ def test_public_detail_uses_content_iframe_sandbox(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_public_content_endpoint_has_csp_and_resize_script(client, django_user_model):
+def test_public_content_endpoint_serves_html_verbatim(client, django_user_model):
     from apps.documents.models import Document, DocumentVersion
 
     user = django_user_model.objects.create_user(username="content-publisher", password="not-used")
@@ -225,8 +225,11 @@ def test_public_content_endpoint_has_csp_and_resize_script(client, django_user_m
     assert "default-src 'none'" in response["Content-Security-Policy"]
     body = response.content.decode()
     assert "<script>window.demo = true;</script>" in body
-    assert "atlas-doc-resize" in body
-    assert body.index("atlas-doc-resize") < body.lower().index("</body>")
+    # iframe 自带视口与滚动，内容端点原样返回导入的 HTML，不再注入脚本
+    assert body == (
+        "<!doctype html><html><head><style>body{color:red}</style></head>"
+        "<body><h1>内容端点</h1><script>window.demo = true;</script></body></html>"
+    )
 
 
 @pytest.mark.django_db

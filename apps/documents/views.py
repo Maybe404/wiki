@@ -1,5 +1,4 @@
 import json
-import re
 import secrets
 import uuid
 from typing import cast
@@ -39,37 +38,16 @@ DOCUMENT_CONTENT_CSP = (
     "frame-src https:;"
 )
 
-_RESIZE_SCRIPT = """<script>
-(() => {
-  const send = () => parent.postMessage({
-    type: "atlas-doc-resize",
-    height: Math.ceil(document.documentElement.scrollHeight)
-  }, "*");
-  new ResizeObserver(send).observe(document.documentElement);
-  window.addEventListener("load", send);
-  send();
-})();
-</script>"""
-
-_BODY_END_RE = re.compile(r"</body\s*>", re.IGNORECASE)
-
 
 def _current_version(doc: Document) -> DocumentVersion | None:
     """Return the current content snapshot for a document."""
     return doc.versions.filter(is_auto=False).first() or doc.versions.first()  # ty: ignore[unresolved-attribute]
 
 
-def _inject_resize_script(html: str) -> str:
-    """Inject iframe resize bridge without parsing or rewriting user HTML."""
-    match = _BODY_END_RE.search(html)
-    if match:
-        return f"{html[: match.start()]}{_RESIZE_SCRIPT}{html[match.start() :]}"
-    return f"{html}{_RESIZE_SCRIPT}"
-
-
 def _document_content_response(html: str) -> HttpResponse:
+    """Serve the imported full-page HTML verbatim; the iframe owns its own scroll."""
     response = HttpResponse(
-        _inject_resize_script(html),
+        html,
         content_type="text/html; charset=utf-8",
     )
     response["Content-Security-Policy"] = DOCUMENT_CONTENT_CSP

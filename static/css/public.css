@@ -805,7 +805,7 @@ em     { font-style: italic; }
 
 .pub-article--fullpage {
   max-width: none;
-  padding-top: 48px;
+  padding: 0;
 }
 
 /* Eyebrow / lead */
@@ -1026,12 +1026,13 @@ em     { font-style: italic; }
 .pub-doc-body { font-size: var(--text-body-reading); }
 
 .pub-doc-frame {
+  display: block;
   width: 100%;
-  min-height: 80vh;
+  height: calc(100vh - var(--top-nav-height));
   border: 0;
   border-radius: 0;
   background: var(--color-canvas);
-  margin: 24px 0;
+  margin: 0;
 }
 
 .pub-doc-body h2 {

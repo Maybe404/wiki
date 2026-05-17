@@ -38,38 +38,39 @@
   <main class="pub-main">
     <article class="pub-article{% if is_full_page %} pub-article--fullpage{% endif %}">
 
-      <header class="pub-doc-header" id="doc-top">
-        <p class="pub-eyebrow">
-          {% if document.published_at %}
-            发布于 {{ document.published_at|date:"Y-m-d" }}
-          {% else %}
-            更新于 {{ document.updated_at|date:"Y-m-d" }}
-          {% endif %}
-        </p>
-        <h1 class="pub-display">{{ document.title }}</h1>
-      </header>
-
       {% if is_full_page %}
-        {# 完整 HTML 页面：用 /content/ 响应头 + sandbox 隔离样式与脚本环境 #}
+        {# 完整 HTML 页面：固定视口高度，文档在 iframe 内部自行滚动，原样展示 #}
         <iframe class="pub-doc-frame"
                 id="doc-frame"
-                data-doc-frame
                 sandbox="allow-scripts allow-downloads allow-popups"
                 referrerpolicy="no-referrer"
                 title="{{ document.title }}"
                 src="{{ content_url }}"></iframe>
-      {% elif content_html %}
-        <div class="pub-doc-body">
-          {# safe: content_html 已经 bleach 清洗（apps/editor/sanitizer.py）并由 extract_toc 处理过 #}
-          {{ content_html|safe }}
-        </div>
       {% else %}
-        <p class="pub-empty-hint">该文档尚无内容。</p>
-      {% endif %}
+        <header class="pub-doc-header" id="doc-top">
+          <p class="pub-eyebrow">
+            {% if document.published_at %}
+              发布于 {{ document.published_at|date:"Y-m-d" }}
+            {% else %}
+              更新于 {{ document.updated_at|date:"Y-m-d" }}
+            {% endif %}
+          </p>
+          <h1 class="pub-display">{{ document.title }}</h1>
+        </header>
 
-      <footer class="pub-doc-footer">
-        最后更新于 {{ document.updated_at|date:"Y-m-d" }}
-      </footer>
+        {% if content_html %}
+          <div class="pub-doc-body">
+            {# safe: content_html 已经 bleach 清洗（apps/editor/sanitizer.py）并由 extract_toc 处理过 #}
+            {{ content_html|safe }}
+          </div>
+        {% else %}
+          <p class="pub-empty-hint">该文档尚无内容。</p>
+        {% endif %}
+
+        <footer class="pub-doc-footer">
+          最后更新于 {{ document.updated_at|date:"Y-m-d" }}
+        </footer>
+      {% endif %}
 
     </article>
   </main>
@@ -93,6 +94,3 @@
 </aside>
 {% endblock %}
 
-{% block extra_js %}
-  <script src="{% static 'js/doc_frame.js' %}" defer></script>
-{% endblock %}

@@ -124,7 +124,6 @@
     <div class="doc-fullpage-wrap">
       <p class="doc-fullpage-hint">完整 HTML 文档，原样渲染。不支持行内编辑，重新生成请走「从 HTML 导入」。</p>
       <iframe class="doc-fullpage-frame"
-              data-doc-frame
               sandbox="allow-scripts allow-downloads allow-popups"
               referrerpolicy="no-referrer"
               title="{{ document.title }}"
@@ -320,7 +319,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/doc_frame.js' %}" defer></script>
 <script src="{% static 'js/publish.js' %}"></script>
 <script>
   PublishManager.init({
