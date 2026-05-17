@@ -54,7 +54,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.documents.utils.folder_options_for_user",
-                "apps.workspaces.context.sidebar_workspaces",
             ],
         },
     },

@@ -5,7 +5,7 @@
 
 {% block sidebar_tree %}
 {% csrf_token %}
-{% render_admin_tree tree_data %}
+{% render_admin_tree tree_data document.pk %}
 {% endblock %}
 
 {% block main_content %}

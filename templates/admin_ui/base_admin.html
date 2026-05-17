@@ -124,7 +124,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 
-<body x-data="adminApp()" x-init="init()">
+<body x-data="adminApp()">
 
   <!-- Mobile topbar -->
   <header class="admin-topbar">
@@ -220,33 +220,6 @@
               <path class="sidebar-tool-fold-mark" d="M1.8 5.2l1.2-1.2 1.2 1.2"/>
             </svg>
           </button>
-        </div>
-      </div>
-
-      <!-- Workspace switcher -->
-      <div class="sidebar-workspace" x-data="{ wsOpen: false }">
-        <button type="button" class="sidebar-workspace-btn" @click="wsOpen = !wsOpen"
-                :aria-expanded="wsOpen" title="切换工作空间">
-          <svg class="sidebar-workspace-chevron" :class="{'is-open': wsOpen}"
-               width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor"
-               stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="2.5 4 5.5 7.5 8.5 4"/>
-          </svg>
-          <span class="sidebar-workspace-name">
-            {% if current_workspace %}{{ current_workspace.name }}{% else %}全部空间{% endif %}
-          </span>
-        </button>
-        <div class="sidebar-workspace-menu" x-show="wsOpen" @click.outside="wsOpen = false"
-             x-transition style="display:none;">
-          <a href="{% url 'admin_dashboard' %}" class="sidebar-workspace-item{% if not current_workspace %} is-active{% endif %}">
-            <span>全部空间</span>
-          </a>
-          {% for ws in sidebar_workspaces %}
-            <a href="{% url 'workspace_home' ws.slug %}"
-               class="sidebar-workspace-item{% if current_workspace and current_workspace.slug == ws.slug %} is-active{% endif %}">
-              <span>{{ ws.name }}</span>
-            </a>
-          {% endfor %}
         </div>
       </div>
 
@@ -707,6 +680,7 @@
             const hasChildren = node.querySelector(':scope > .tree-children');
             if (hasChildren) node.classList.toggle('tree-node--collapsed', this.treeFolded);
           });
+          saveCollapsedTreeIds();
         },
 
         init() {
@@ -735,8 +709,11 @@
             }
           });
 
-          // 初始化 SortableJS
-          this.$nextTick(() => initSortable());
+          // 初始化 SortableJS + 恢复目录树展开状态
+          this.$nextTick(() => {
+            initSortable();
+            applyTreeState();
+          });
 
           // 编辑按钮直接进入文档详情
           document.addEventListener('click', (e) => {
@@ -765,7 +742,10 @@
             const btn = e.target.closest('.tree-toggle');
             if (!btn) return;
             const li = btn.closest('.tree-node');
-            if (li) li.classList.toggle('tree-node--collapsed');
+            if (li) {
+              li.classList.toggle('tree-node--collapsed');
+              saveCollapsedTreeIds();
+            }
           });
 
           // 选中节点 — 设置 is-active + 导航到文档或空间页
@@ -775,14 +755,17 @@
               return;
             }
             this.selectTreeRow(row);
-            if (row.dataset.nodeType === 'workspace' || row.dataset.nodeType === 'space-root') {
+            if (row.dataset.nodeType === 'workspace') {
               const url = row.dataset.docUrl;
               if (url) window.location.href = url;
               return;
             }
             if (row.dataset.nodeType === 'folder') {
               const li = row.closest('.tree-node');
-              if (li) li.classList.toggle('tree-node--collapsed');
+              if (li) {
+                li.classList.toggle('tree-node--collapsed');
+                saveCollapsedTreeIds();
+              }
               return;
             }
             const url = row.dataset.docUrl;
@@ -908,18 +891,65 @@
       return match ? match[1] : '';
     }
 
+    // ── 目录树展开状态持久化（跨页面导航保留）───────────────────
+    const TREE_COLLAPSE_KEY = 'atlas-tree-collapsed';
+
+    function saveCollapsedTreeIds() {
+      const ids = Array.from(document.querySelectorAll('.tree-node--collapsed'))
+        .map((n) => n.dataset.id)
+        .filter(Boolean);
+      try {
+        localStorage.setItem(TREE_COLLAPSE_KEY, JSON.stringify(ids));
+      } catch (e) { /* localStorage 不可用时静默降级 */ }
+    }
+
+    function applyTreeState() {
+      let collapsed;
+      try {
+        collapsed = new Set(JSON.parse(localStorage.getItem(TREE_COLLAPSE_KEY) || '[]'));
+      } catch (e) {
+        collapsed = new Set();
+      }
+      document.querySelectorAll('.tree-node').forEach((node) => {
+        if (node.dataset.id && collapsed.has(node.dataset.id)) {
+          node.classList.add('tree-node--collapsed');
+        }
+      });
+      // 当前文档的祖先目录强制展开，保证定位可见
+      const active = document.querySelector(
+        '.tree-node-row.is-active[data-node-type="document"]'
+      );
+      if (!active) return;
+      let li = active.closest('.tree-node');
+      let parent = li ? li.parentElement.closest('.tree-node') : null;
+      while (parent) {
+        parent.classList.remove('tree-node--collapsed');
+        parent = parent.parentElement.closest('.tree-node');
+      }
+      active.scrollIntoView({ block: 'center' });
+    }
+
     function initSortable() {
       const lists = document.querySelectorAll('.sortable-list');
       lists.forEach((list) => {
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // 每个工作空间用独立 group，限制只能在同一空间内拖拽
+        const wsId = list.dataset.workspaceId || 'root';
         Sortable.create(list, {
-          group: 'atlas-tree',
+          group: 'atlas-tree-' + wsId,
           animation: reducedMotion ? 0 : 150,
+          // 小三角与行内操作按钮不触发拖拽，保证点击可正常收起/展开
+          filter: '.tree-toggle, .node-action',
+          preventOnFilter: false,
           ghostClass: 'tree-ghost',
           dragClass: 'sortable-drag',
           fallbackOnBody: true,
           swapThreshold: 0.65,
+          onStart() {
+            document.body.classList.add('tree-dragging');
+          },
           onEnd(evt) {
+            document.body.classList.remove('tree-dragging');
             const nodeId = evt.item.dataset.id;
             if (!nodeId) return;
 

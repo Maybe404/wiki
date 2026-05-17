@@ -37,50 +37,38 @@ _ICON_FOLDER = (
 )
 
 
-def _render_synthetic_node(item: dict) -> str:
-    kind = item.get("kind")
-    children: list = item.get("children", [])
-
-    if kind == "all_workspaces":
-        node_id = "all-workspaces"
-        title = "全部空间"
-        url = "/admin/"
-        node_type = "space-root"
-        row_class = "tree-node-row tree-node-row--folder tree-node-row--synthetic"
-        extra_class = " tree-node--space-root"
-    elif kind == "workspace":
-        workspace = item["workspace"]
-        node_id = f"workspace-{escape(str(workspace.pk))}"
-        title = escape(workspace.name)
-        url = f"/w/{escape(workspace.slug)}/"
-        node_type = "workspace"
-        row_class = "tree-node-row tree-node-row--folder tree-node-row--workspace"
-        extra_class = " tree-node--workspace"
-    else:
+def _render_synthetic_node(item: dict, active_id: str = "") -> str:
+    """Render a workspace as a top-level tree node holding its folders and documents."""
+    if item.get("kind") != "workspace":
         return ""
 
-    inner = "".join(
-        _render_synthetic_node(child) if child.get("kind") else _render_node(child)
-        for child in children
-    )
+    workspace = item["workspace"]
+    children: list = item.get("children", [])
+    node_id = f"workspace-{escape(str(workspace.pk))}"
+    ws_id = escape(str(workspace.pk))
+    title = escape(workspace.name)
+    url = f"/w/{escape(workspace.slug)}/"
     active_class = " is-active" if item.get("is_active") else ""
 
+    inner = "".join(_render_node(child, active_id) for child in children)
+
     return (
-        f'<li class="tree-node tree-node--folder{extra_class}" data-id="{node_id}"'
-        f' data-node-type="{node_type}" data-node-title="{title}">'
-        f'<div class="{row_class}{active_class}" tabindex="0" role="treeitem"'
-        f' aria-label="{title}" data-node-type="{node_type}" data-node-id="{node_id}"'
-        f' data-node-title="{title}" data-doc-url="{url}">'
+        f'<li class="tree-node tree-node--folder tree-node--workspace" data-id="{node_id}"'
+        f' data-node-type="workspace" data-node-title="{title}">'
+        f'<div class="tree-node-row tree-node-row--folder tree-node-row--workspace{active_class}"'
+        f' tabindex="0" role="treeitem" aria-label="{title}" data-node-type="workspace"'
+        f' data-node-id="{node_id}" data-node-title="{title}" data-doc-url="{url}">'
         f'<button type="button" class="tree-toggle" aria-label="展开/收起">{_ICON_CHEVRON}</button>'
         f'<span class="folder-mark" aria-hidden="true">{_ICON_FOLDER}</span>'
         f'<span class="node-title">{title}</span>'
         f"</div>"
-        f'<ul class="tree-children">{inner}</ul>'
+        f'<ul class="tree-children sortable-list" data-parent-id=""'
+        f' data-workspace-id="{ws_id}">{inner}</ul>'
         f"</li>"
     )
 
 
-def _render_node(item: dict) -> str:
+def _render_node(item: dict, active_id: str = "") -> str:
     node = item["node"]
     children: list = item.get("children", [])
     node_id = escape(str(node.pk))
@@ -101,12 +89,18 @@ def _render_node(item: dict) -> str:
 
     children_html = ""
     if is_folder or children:
-        inner = "".join(_render_node(c) for c in children)
+        inner = "".join(_render_node(c, active_id) for c in children)
+        ws_attr = (
+            f' data-workspace-id="{escape(str(node.workspace_id))}"' if node.workspace_id else ""
+        )
         children_html = (
-            f'<ul class="tree-children sortable-list" data-parent-id="{node_id}">{inner}</ul>'
+            f'<ul class="tree-children sortable-list" data-parent-id="{node_id}"'
+            f"{ws_attr}>{inner}</ul>"
         )
 
     row_class = "tree-node-row tree-node-row--folder" if is_folder else "tree-node-row"
+    if not is_folder and active_id and node_id == active_id:
+        row_class += " is-active"
     doc_url_attr = "" if is_folder else f' data-doc-url="/admin/doc/{node_id}/"'
     leading = (
         f'<span class="folder-mark" aria-hidden="true">{_ICON_FOLDER}</span>'
@@ -147,16 +141,17 @@ def _render_node(item: dict) -> str:
 
 
 @register.simple_tag
-def render_admin_tree(tree_data: list) -> str:
-    """渲染文档目录树为嵌套 HTML。接收 build_nested_tree() 的返回值。"""
+def render_admin_tree(tree_data: list, active_id: str = "") -> str:
+    """渲染文档目录树为嵌套 HTML。顶层是各工作空间节点，工作空间不可拖拽排序。
+
+    active_id 为当前正在查看的文档主键，命中的节点会标记为 is-active。
+    """
+    active = str(active_id) if active_id else ""
     inner = "".join(
-        _render_synthetic_node(item) if item.get("kind") else _render_node(item)
+        _render_synthetic_node(item, active) if item.get("kind") else _render_node(item, active)
         for item in tree_data
     )
-    root_class = (
-        "tree-root" if any(item.get("kind") for item in tree_data) else "tree-root sortable-list"
-    )
-    return mark_safe(f'<ul class="{root_class}" data-parent-id="">{inner}</ul>')
+    return mark_safe(f'<ul class="tree-root" data-parent-id="">{inner}</ul>')
 
 
 # ---------- 公开端目录树（只读，无操作按钮，无状态点）----------

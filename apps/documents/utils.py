@@ -163,7 +163,7 @@ def build_published_tree(user=None, workspace: Workspace | None = None) -> list[
 
 
 def build_admin_workspace_tree(user, current_workspace: Workspace | None = None) -> list[dict]:
-    """Sidebar tree grouped as 全部空间 / <workspace> / folders and docs."""
+    """Sidebar tree with each workspace as a top-level node holding its folders and docs."""
     workspaces = workspace_queryset_for_user(user)
     if current_workspace is not None:
         workspaces = [ws for ws in workspaces if ws.pk == current_workspace.pk]
@@ -180,13 +180,7 @@ def build_admin_workspace_tree(user, current_workspace: Workspace | None = None)
             }
         )
 
-    return [
-        {
-            "kind": "all_workspaces",
-            "children": workspace_items,
-            "is_active": current_workspace is None,
-        }
-    ]
+    return workspace_items
 
 
 # ── TOC 抽取 ───────────────────────────────────────────────────────────────
